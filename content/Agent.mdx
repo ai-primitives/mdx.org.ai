@@ -1,0 +1,113 @@
+---
+@id: https://mdx.org.ai/Agent
+@context: https://mdx.org.ai
+@type: TypeDefinition
+title: Agent Type Definition
+---
+
+# Agent Type
+
+## Overview
+
+The Agent type represents an autonomous software entity capable of performing tasks, processing information, or interacting with users within an MDX context. Agents can be used to create interactive documentation, automated content processing, or AI-powered assistance features.
+
+## Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `name` | `string` | Yes | The display name of the agent |
+| `description` | `string` | Yes | A brief description of the agent's purpose and capabilities |
+| `capabilities` | `string[]` | No | List of specific capabilities or features the agent provides |
+| `model` | `string` | No | The underlying AI model or system used by the agent |
+| `context` | `object` | No | Additional context or configuration for the agent |
+| `systemPrompt` | `string` | No | Default system prompt for AI-powered agents |
+| `temperature` | `number` | No | Temperature setting for AI model responses (0.0 - 1.0) |
+| `maxTokens` | `number` | No | Maximum token limit for agent responses |
+
+## Examples
+
+### Basic Agent Definition
+
+```mdx
+---
+@context: https://mdx.org.ai
+@type: Agent
+name: Documentation Helper
+description: Assists users with MDX documentation and formatting
+capabilities:
+  - Format checking
+  - Content suggestions
+  - Code examples
+---
+
+<Agent
+  systemPrompt="You are a helpful assistant for MDX documentation."
+  temperature={0.7}
+  maxTokens={1000}
+/>
+```
+
+### Interactive Documentation Agent
+
+```mdx
+---
+@context: https://mdx.org.ai
+@type: Agent
+name: Code Explainer
+description: Explains code snippets and provides interactive examples
+model: gpt-4
+capabilities:
+  - Code explanation
+  - Live code execution
+  - Interactive examples
+---
+
+<CodeExplainerAgent>
+  ```javascript
+  const greeting = 'Hello, MDX!'
+  console.log(greeting)
+  ```
+</CodeExplainerAgent>
+```
+
+### Content Processing Agent
+
+```mdx
+---
+@context: https://mdx.org.ai
+@type: Agent
+name: Content Processor
+description: Processes and transforms MDX content
+capabilities:
+  - Content summarization
+  - Translation
+  - Format conversion
+context:
+  inputFormat: mdx
+  outputFormat: html
+---
+
+<ContentProcessor>
+  # Original Content
+
+  Process this content according to the specified rules.
+</ContentProcessor>
+```
+
+## Best Practices
+
+1. Always provide clear `name` and `description` properties
+2. List specific `capabilities` to document agent features
+3. Include appropriate error handling in agent implementations
+4. Set reasonable defaults for `temperature` and `maxTokens`
+5. Document any required API keys or authentication
+
+## Related Types
+- [Assistant](https://mdx.org.ai/Assistant)
+- [Function](https://mdx.org.ai/Function)
+- [Tool](https://mdx.org.ai/Tool)
+
+## See Also
+- [MDX AI Components](https://mdx.org.ai/packages/mdxai)
+- [Agent Implementation Guide](https://mdx.org.ai/guides/agents)
+- [AI Integration Examples](https://mdx.org.ai/examples/ai)

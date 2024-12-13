@@ -1,6 +1,32 @@
-# API
+---
+@id: https://mdx.org.ai/API
+@context: https://mdx.org.ai
+@type: TypeDefinition
+title: API Type Definition
+---
 
-You can build an API using MDX and web standards with the WHATWG Fetch API.
+# API Type
+
+## Overview
+
+The API type in MDX enables the creation of HTTP endpoints directly within MDX files using web standards and the WHATWG Fetch API. This allows for seamless integration of API functionality with documentation and interactive components.
+
+## Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `@id` | `string` | Yes | The base URL for the API endpoint |
+| `methods` | `string[]` | No | Supported HTTP methods (GET, POST, PUT, DELETE, etc.) |
+| `headers` | `object` | No | Default headers for API requests |
+| `middleware` | `function[]` | No | Array of middleware functions to process requests |
+| `auth` | `object` | No | Authentication configuration |
+| `cors` | `object` | No | CORS configuration for the endpoint |
+
+## HTTP Methods
+
+You can export specific HTTP method handlers:
+
+### Basic Fetch Handler
 
 ```mdx
 ---
@@ -8,10 +34,9 @@ You can build an API using MDX and web standards with the WHATWG Fetch API.
 ---
 
 export const fetch = request => Response.json({ hello: 'world' })
-
 ```
 
-You can also export HTTP methods like `GET`, `POST`, `PUT`, `DELETE`, etc.
+### HTTP Method Handlers
 
 ```mdx
 ---
@@ -24,3 +49,75 @@ export const POST = async request => {
   return Response.json({ success: true, body })
 }
 ```
+
+### Advanced Examples
+
+#### API with Authentication
+
+```mdx
+---
+@id: 'https://api.example.com/protected'
+@type: 'https://mdx.org.ai/API'
+auth:
+  type: 'bearer'
+  required: true
+---
+
+export const GET = async request => {
+  const token = request.headers.get('Authorization')
+  if (!token?.startsWith('Bearer ')) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  return Response.json({ data: 'Protected resource' })
+}
+```
+
+#### API with CORS and Middleware
+
+```mdx
+---
+@id: 'https://api.example.com/data'
+@type: 'https://mdx.org.ai/API'
+cors:
+  origin: '*'
+  methods: ['GET', 'POST']
+middleware:
+  - rateLimit
+  - cacheControl
+---
+
+const rateLimit = async (request, next) => {
+  // Rate limiting logic
+  return next(request)
+}
+
+const cacheControl = async (request, next) => {
+  const response = await next(request)
+  response.headers.set('Cache-Control', 'max-age=3600')
+  return response
+}
+
+export const GET = async request => {
+  return Response.json({ data: 'Cached and rate-limited response' })
+}
+```
+
+## Best Practices
+
+1. Always specify an `@id` for your API endpoints
+2. Implement proper error handling and status codes
+3. Use middleware for cross-cutting concerns
+4. Document expected request/response formats
+5. Include authentication requirements
+6. Configure appropriate CORS settings
+
+## Related Types
+- [Function](https://mdx.org.ai/Function)
+- [App](https://mdx.org.ai/App)
+- [Tool](https://mdx.org.ai/Tool)
+
+## See Also
+- [MDX API Components](https://mdx.org.ai/packages/mdxe)
+- [API Implementation Guide](https://mdx.org.ai/guides/api)
+- [Web Standards](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)

@@ -1,0 +1,154 @@
+---
+@id: https://mdx.org.ai/Function
+@context: https://mdx.org.ai
+@type: TypeDefinition
+title: Function Type Definition
+---
+
+# Function Type
+
+## Overview
+
+The Function type represents a reusable piece of logic in MDX that can process data, handle events, or perform computations. Functions can be used within components, as utilities, or as standalone features to enhance MDX content with dynamic behavior.
+
+## Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `name` | `string` | Yes | The name of the function |
+| `parameters` | `object[]` | No | Function parameters and their types |
+| `returnType` | `string` | No | Type of the return value |
+| `async` | `boolean` | No | Whether the function is asynchronous |
+| `pure` | `boolean` | No | Whether the function is pure (no side effects) |
+| `throws` | `string[]` | No | Possible error types that may be thrown |
+| `cache` | `object` | No | Caching configuration |
+| `middleware` | `Function[]` | No | Array of middleware functions |
+
+## Examples
+
+### Data Processing Function
+
+```mdx
+---
+@context: https://mdx.org.ai
+@type: Function
+name: processMarkdown
+parameters:
+  - name: content
+    type: string
+  - name: options
+    type: object
+returnType: string
+pure: true
+---
+
+export const processMarkdown = (content, options = {}) => {
+  const {
+    plugins = [],
+    format = 'html'
+  } = options
+
+  return unified()
+    .use(remarkParse)
+    .use(plugins)
+    .use(remarkMdx)
+    .use(remarkRehype)
+    .process(content)
+}
+
+<Component>{processMarkdown(content)}</Component>
+```
+
+### Async API Function
+
+```mdx
+---
+@context: https://mdx.org.ai
+@type: Function
+name: fetchData
+parameters:
+  - name: endpoint
+    type: string
+  - name: query
+    type: object
+returnType: Promise<object>
+async: true
+cache:
+  duration: 3600
+  strategy: 'stale-while-revalidate'
+---
+
+export const fetchData = async (endpoint, query = {}) => {
+  const cacheKey = `${endpoint}-${JSON.stringify(query)}`
+  const cached = await cache.get(cacheKey)
+
+  if (cached) return cached
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    body: JSON.stringify(query)
+  })
+
+  const data = await response.json()
+  await cache.set(cacheKey, data)
+
+  return data
+}
+
+<DataDisplay data={await fetchData('/api/stats')} />
+```
+
+### Event Handler Function
+
+```mdx
+---
+@context: https://mdx.org.ai
+@type: Function
+name: handleInteraction
+parameters:
+  - name: event
+    type: Event
+  - name: context
+    type: object
+middleware:
+  - rateLimit
+  - validateInput
+---
+
+export const handleInteraction = (event, context) => {
+  const { type, target } = event
+  const { state, setState } = context
+
+  switch (type) {
+    case 'click':
+      setState({ ...state, clicked: true })
+      break
+    case 'hover':
+      setState({ ...state, hovered: true })
+      break
+    default:
+      console.log('Unhandled interaction:', type)
+  }
+}
+
+<InteractiveComponent onEvent={handleInteraction} />
+```
+
+## Best Practices
+
+1. Use TypeScript for type safety
+2. Document parameters and return types
+3. Implement proper error handling
+4. Consider performance implications
+5. Use pure functions when possible
+6. Cache expensive operations
+
+## Related Types
+- [Component](https://mdx.org.ai/Component)
+- [API](https://mdx.org.ai/API)
+- [App](https://mdx.org.ai/App)
+
+## See Also
+- [MDX Function Library](https://mdx.org.ai/packages/mdxe)
+- [Function Development Guide](https://mdx.org.ai/guides/functions)
+- [TypeScript Integration](https://mdx.org.ai/guides/typescript)

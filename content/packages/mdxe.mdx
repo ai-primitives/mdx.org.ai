@@ -1,3 +1,10 @@
+---
+@id: https://mdx.org.ai/packages/mdxe
+@context: https://mdx.org.ai
+@type: Package
+title: mdxe Package
+---
+
 # mdxe
 
 [mdxe](https://npmjs.com/mdxe) is a zero-config CLI to evaluate and execute MDX files.
@@ -15,16 +22,170 @@
 ## Installation
 
 ```bash
+# Using npm (globally)
 npm install -g mdxe
+
+# Using yarn (globally)
+yarn global add mdxe
+
+# Using pnpm (globally)
+pnpm add -g mdxe
 ```
+
 ## Usage
 
+### Basic Usage
+
 ```bash
+# Execute an MDX file
 mdxe posts/hello-world.mdx
+
+# Using npx without global installation
+npx mdxe posts/hello-world.mdx
+
+# Make an MDX file executable
+mdxe chmod +x posts/hello-world.mdx
 ```
 
-or if you have not installed it globally:
+### Interactive Mode
 
 ```bash
-npx mdxe posts/hello-world.mdx
+# Start interactive file selection
+mdxe
+
+# Start interactive mode in specific directory
+mdxe ./content
 ```
+
+### Using Shebang
+
+```bash
+#!/usr/bin/env mdxe
+
+# Your MDX content here
+export const greeting = "Hello, World!"
+
+<div>{greeting}</div>
+```
+
+## API Reference
+
+### CLI Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-v, --version` | Show version number | - |
+| `-h, --help` | Show help | - |
+| `-w, --watch` | Watch for file changes | false |
+| `-d, --dir` | Specify working directory | current |
+| `-x, --exec` | Make file executable | false |
+| `-i, --interactive` | Start interactive mode | false |
+
+### Programmatic Usage
+
+```javascript
+import { execute, watch } from 'mdxe'
+
+// Execute an MDX file
+await execute('path/to/file.mdx', {
+  cwd: process.cwd(),
+  watch: false
+})
+
+// Watch mode with callback
+watch('path/to/file.mdx', (result) => {
+  console.log('File executed:', result)
+})
+```
+
+## Advanced Features
+
+### Custom Runtime Configuration
+
+```javascript
+// mdxe.config.js
+module.exports = {
+  plugins: ['remark-gfm'],
+  runtime: {
+    components: {
+      Button: './components/Button',
+      Card: './components/Card'
+    },
+    globals: {
+      process: false,
+      window: false
+    }
+  }
+}
+```
+
+### Environment Variables
+
+```bash
+# Load environment variables
+mdxe --env-file .env posts/config.mdx
+
+# Pass individual variables
+MDX_ENV=production mdxe posts/deploy.mdx
+```
+
+## Best Practices
+
+1. Use shebang for executable MDX files
+2. Implement proper error handling
+3. Configure runtime environment
+4. Use watch mode during development
+5. Follow MDX best practices
+6. Keep execution context clean
+
+## Examples
+
+### Data Processing Script
+
+```mdx
+#!/usr/bin/env mdxe
+
+import { readFile, writeFile } from 'fs/promises'
+import { process } from './utils'
+
+export const main = async () => {
+  const data = await readFile('data.json', 'utf-8')
+  const processed = process(JSON.parse(data))
+  await writeFile('output.json', JSON.stringify(processed))
+}
+
+main()
+```
+
+### Interactive Component Development
+
+```mdx
+#!/usr/bin/env mdxe
+
+import { Button } from './components'
+import { useState } from 'react'
+
+export const Counter = () => {
+  const [count, setCount] = useState(0)
+  return (
+    <div>
+      <h1>Count: {count}</h1>
+      <Button onClick={() => setCount(count + 1)}>
+        Increment
+      </Button>
+    </div>
+  )
+}
+
+<Counter />
+```
+
+## Related Packages
+- [mdxai](./mdxai) - MDX AI integration library
+- [mdxld](./mdxld) - Core MDX Linked Data library
+- [react-mdxld](./react-mdxld) - React components for MDX Linked Data
+
+## See Also
+- [MDX Documentation](https://mdxjs.com)
+- [Node.js CLI Best Practices](https://github.com/lirantal/nodejs-cli-apps-best-practices)
+- [Shebang Usage in Node.js](https://nodejs.org/api/cli.html#shebang)
