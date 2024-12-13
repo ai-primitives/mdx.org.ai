@@ -1,7 +1,7 @@
 ---
-@id: https://mdx.org.ai/Component
-@context: https://mdx.org.ai
-@type: TypeDefinition
+"@id": https://mdx.org.ai/Component
+"@context": https://mdx.org.ai
+"@type": TypeDefinition
 title: Component Type Definition
 ---
 
@@ -30,8 +30,8 @@ The Component type represents a reusable UI element in MDX that can combine Mark
 
 ```mdx
 ---
-@context: https://mdx.org.ai
-@type: Component
+"@context": https://mdx.org.ai
+"@type": Component
 name: InfoBox
 props:
   type: string
@@ -56,8 +56,8 @@ export const InfoBox = ({ type = 'info', title, children }) => (
 
 ```mdx
 ---
-@context: https://mdx.org.ai
-@type: Component
+"@context": https://mdx.org.ai
+"@type": Component
 name: CodePlayground
 props:
   language: string
@@ -91,8 +91,8 @@ export const CodePlayground = ({ language, initialCode }) => {
 
 ```mdx
 ---
-@context: https://mdx.org.ai
-@type: Component
+"@context": https://mdx.org.ai
+"@type": Component
 name: DataTable
 props:
   data: array

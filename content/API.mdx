@@ -1,7 +1,7 @@
 ---
-@id: https://mdx.org.ai/API
-@context: https://mdx.org.ai
-@type: TypeDefinition
+"@id": https://mdx.org.ai/API
+"@context": https://mdx.org.ai
+"@type": TypeDefinition
 title: API Type Definition
 ---
 
@@ -30,7 +30,7 @@ You can export specific HTTP method handlers:
 
 ```mdx
 ---
-@type: https://mdx.org.ai/API
+"@type": https://mdx.org.ai/API
 ---
 
 export const fetch = request => Response.json({ hello: 'world' })
@@ -40,8 +40,8 @@ export const fetch = request => Response.json({ hello: 'world' })
 
 ```mdx
 ---
-@id: 'https://api.example.com'
-@type: 'https://mdx.org.ai/API'
+"@id": 'https://api.example.com'
+"@type": 'https://mdx.org.ai/API'
 ---
 
 export const POST = async request => {
@@ -56,8 +56,8 @@ export const POST = async request => {
 
 ```mdx
 ---
-@id: 'https://api.example.com/protected'
-@type: 'https://mdx.org.ai/API'
+"@id": 'https://api.example.com/protected'
+"@type": 'https://mdx.org.ai/API'
 auth:
   type: 'bearer'
   required: true
@@ -77,8 +77,8 @@ export const GET = async request => {
 
 ```mdx
 ---
-@id: 'https://api.example.com/data'
-@type: 'https://mdx.org.ai/API'
+"@id": 'https://api.example.com/data'
+"@type": 'https://mdx.org.ai/API'
 cors:
   origin: '*'
   methods: ['GET', 'POST']
