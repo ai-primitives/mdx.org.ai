@@ -24,9 +24,17 @@
   "license": "MIT",
   "devDependencies": {
     "@types/glob": "^8.1.0",
+    "@types/mdast": "^4.0.4",
     "@types/node": "^20.11.16",
+    "@types/unist": "^3.0.3",
     "glob": "^11.0.0",
+    "mdast": "^3.0.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-parse": "^11.0.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "unified": "^11.0.5",
+    "unist": "^0.0.1",
+    "yaml": "^2.6.1"
   }
 }
