@@ -9,8 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "extract-docs": "NODE_OPTIONS='--loader ts-node/esm' ts-node --esm scripts/extract-docs.ts",
-    "prebuild": "mkdir -p src/generated && pnpm extract-docs && NODE_OPTIONS='--loader ts-node/esm' ts-node --esm scripts/generate-types.ts",
+    "prebuild": "mkdir -p src/generated && NODE_OPTIONS='--loader ts-node/esm' ts-node --esm scripts/generate-types.ts",
     "build": "tsc",
     "prepublishOnly": "pnpm build"
   },
