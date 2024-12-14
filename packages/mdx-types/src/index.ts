@@ -3,32 +3,35 @@
  * Provides TypeScript types and documentation for MDX.org.ai file types
  */
 
-// Export base types
+// Import types and utilities
+import type { MDXMetadata } from './utils/mdx-parser.js';
+import { validateMDXType } from './utils/validation.js';
+
+// Export base types and interfaces
 export * from './types.js';
+export * from './generated/types.js';
 
 // Export MDX type interfaces
 export * from './mdx-types/index.js';
 
-// Export documentation strings
-export * from './docs/index.js';
+// Export documentation strings and helpers
+export * from './generated/docs.js';
 
-// Utility functions (placeholders for future implementation)
-export const validateMDXType = (type: string): boolean => {
-  const validTypes = [
-    'AI', 'API', 'Agent', 'App', 'Assistant', 'Blog', 'BlogPost',
-    'Code', 'Component', 'Content', 'Data', 'Directory', 'Eval',
-    'Function', 'Package', 'Product', 'Prompt', 'Startup',
-    'StateMachine', 'Tool', 'UI', 'WebPage', 'Worker', 'Workflow'
-  ];
-  return validTypes.includes(type.replace('https://mdx.org.ai/', ''));
-};
+// Export MDX parser utilities
+export { MDXMetadata, parseMDXFile } from './utils/mdx-parser.js';
 
-export const parseMDXFrontmatter = (content: string) => {
-  // TODO: Implement frontmatter parsing
-  return {};
-};
+// Export validation utilities
+export { validateMDXType, validateJSONLD, validateMDX } from './utils/validation.js';
 
-export const generateMDXType = (type: string) => {
-  // TODO: Implement MDX type generation
+// Utility functions for MDX type generation
+export const generateMDXType = (type: string): string => {
+  const metadata: MDXMetadata = {
+    type: `https://mdx.org.ai/${type}`,
+    context: 'https://mdx.org.ai'
+  };
+
+  if (!validateMDXType(metadata)) {
+    throw new Error(`Invalid MDX type: ${type}`);
+  }
   return `---\n$type: https://mdx.org.ai/${type}\n---\n`;
 };
