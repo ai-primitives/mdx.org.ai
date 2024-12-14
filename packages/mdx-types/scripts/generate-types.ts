@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 function generateTypeDefinitions(metadataList: MDXMetadata[]): string {
-  const typeDefinitions = new Map<string, Map<string, Set<string>>>();
+  const typeDefinitions = new Map<string, Map<string, Set<any>>>();
 
   metadataList.forEach(metadata => {
     const type = metadata.type?.replace('https://mdx.org.ai/', '') || 'Unknown';
@@ -22,7 +22,7 @@ function generateTypeDefinitions(metadataList: MDXMetadata[]): string {
       if (!properties.has(key)) {
         properties.set(key, new Set());
       }
-      properties.get(key)?.add(typeof value);
+      properties.get(key)?.add(value);
     });
   });
 
@@ -30,15 +30,35 @@ function generateTypeDefinitions(metadataList: MDXMetadata[]): string {
     .filter(([type]) => type !== 'Unknown')
     .map(([type, properties]) => {
       const propertyDefinitions = Array.from(properties.entries())
-        .map(([key, types]) => {
-          const typeStr = Array.from(types).join(' | ') || 'any';
-          if (key.startsWith('@')) {
-            return `  ['${key}']?: ${typeStr};`;
-          }
-          if (key === '$type') {
+        .map(([key, values]) => {
+          const valueArray = Array.from(values);
+          let typeStr: string;
+
+          if (key === 'type' || key === '@type') {
             return `  $type: 'https://mdx.org.ai/${type}';`;
           }
-          return `  ${key}?: ${typeStr};`;
+
+          if (key === '@context') {
+            return `  '@context': 'https://mdx.org.ai';`;
+          }
+
+          if (valueArray.length === 1) {
+            const value = valueArray[0];
+            if (typeof value === 'string' && value.startsWith('https://')) {
+              typeStr = `'${value}'`;
+            } else {
+              typeStr = typeof value;
+            }
+          } else {
+            typeStr = valueArray
+              .map(v => typeof v === 'string' && v.startsWith('https://') ? `'${v}'` : typeof v)
+              .join(' | ');
+          }
+
+          if (key.startsWith('@')) {
+            return `  ['${key}']${values.size === 1 ? '' : '?'}: ${typeStr};`;
+          }
+          return `  ${key}${values.size === 1 ? '' : '?'}: ${typeStr};`;
         })
         .join('\n');
 
@@ -53,8 +73,8 @@ ${propertyDefinitions}
 ${interfaces.join('\n')}
 
 export type MDXType = ${interfaces.length > 0
-  ? interfaces.map(i => i.match(/interface (\w+)/)![1]).join(' | ')
-  : 'MDXFrontmatter'};
+    ? interfaces.map(i => i.match(/interface (\w+)/)![1]).join(' | ')
+    : 'MDXFrontmatter'};
 `;
 }
 
