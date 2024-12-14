@@ -19,6 +19,17 @@
     "react-icons": "^5.4.0"
   },
   "devDependencies": {
-    "pagefind": "^1.1.1"
+    "@types/glob": "^8.1.0",
+    "@types/mdast": "^4.0.3",
+    "@types/node": "^20.17.10",
+    "@types/unist": "^3.0.2",
+    "glob": "^10.3.10",
+    "pagefind": "^1.1.1",
+    "remark-frontmatter": "^5.0.0",
+    "remark-parse": "^11.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2",
+    "unified": "^11.0.0",
+    "yaml": "^2.3.4"
   }
 }
