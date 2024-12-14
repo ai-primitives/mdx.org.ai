@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "extract-docs": "NODE_OPTIONS='--loader ts-node/esm' ts-node --esm scripts/extract-docs.ts",
-    "prebuild": "pnpm extract-docs && NODE_OPTIONS='--loader ts-node/esm' ts-node --esm scripts/generate-types.ts",
+    "prebuild": "mkdir -p src/generated && pnpm extract-docs && NODE_OPTIONS='--loader ts-node/esm' ts-node --esm scripts/generate-types.ts",
     "build": "tsc",
     "prepublishOnly": "pnpm build"
   },
