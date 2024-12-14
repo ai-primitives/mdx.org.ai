@@ -63,11 +63,33 @@ export type MDXType = ${interfaces.length > 0
 `;
 }
 
-function generateDocumentationExports(docs: { content: string; examples: string[] }[]): string {
-  const exports = docs.map((doc, index) => {
+function extractExamplesFromContent(content: string): string[] {
+  const examples: string[] = [];
+  const mdxCodeBlockRegex = /```mdx\n([\s\S]*?)```/g;
+  let match;
+
+  while ((match = mdxCodeBlockRegex.exec(content)) !== null) {
+    examples.push(match[1].trim());
+  }
+
+  return examples;
+}
+
+function generateDocumentationExports(docs: { type: string; content: string; examples: string[] }[]): string {
+  // Group documentation by type
+  const typeMap = new Map<string, { content: string; examples: string[] }>();
+
+  docs.forEach(doc => {
+    const type = doc.type.replace('https://mdx.org.ai/', '');
+    if (!typeMap.has(type)) {
+      typeMap.set(type, { content: doc.content, examples: doc.examples });
+    }
+  });
+
+  const exports = Array.from(typeMap.entries()).map(([type, doc]) => {
     const content = JSON.stringify(doc.content);
     const examples = JSON.stringify(doc.examples);
-    return `export const DOC_${index} = {
+    return `export const ${type}_DOC = {
   content: ${content},
   examples: ${examples}
 } as const;`;
@@ -77,22 +99,40 @@ function generateDocumentationExports(docs: { content: string; examples: string[
 ${exports.join('\n\n')}
 
 export const documentation = {
-  ${docs.map((_, i) => `DOC_${i}`).join(',\n  ')}
-} as const;`;
+  ${Array.from(typeMap.keys()).map(type => `${type}: ${type}_DOC`).join(',\n  ')}
+} as const;
+
+export const getDocumentationByType = (type: string): typeof documentation[keyof typeof documentation] | undefined => {
+  const key = type.replace('https://mdx.org.ai/', '');
+  return documentation[key as keyof typeof documentation];
+};`;
 }
 
 async function generateTypes() {
   try {
-    // Find all MDX files in content directory
-    const mdxFiles = globSync(join(__dirname, '../../../content/*.mdx'));
+    // Find all MDX files in content directories
+    const mdxFiles = [
+      ...globSync(join(__dirname, '../content/types/*.mdx')),
+      ...globSync(join(__dirname, '../../../content/*.mdx')),
+      ...globSync(join(__dirname, '../../../examples/*.mdx'))
+    ];
 
     if (mdxFiles.length === 0) {
-      console.warn('No MDX files found in content directory');
+      console.warn('No MDX files found in content directories');
       return;
     }
 
-    // Parse MDX files and extract metadata and content
-    const parsedFiles = mdxFiles.map(file => parseMDXFile(file));
+    // Parse MDX files and extract metadata, content, and examples
+    const parsedFiles = mdxFiles.map(file => {
+      const { metadata, content } = parseMDXFile(file);
+      const examples = extractExamplesFromContent(content);
+      return {
+        type: metadata.type || metadata['@type'] || 'Unknown',
+        metadata,
+        content,
+        examples
+      };
+    });
 
     // Create generated directory if it doesn't exist
     const generatedDir = join(__dirname, '../src/generated');
@@ -109,7 +149,7 @@ async function generateTypes() {
 
     // Generate documentation constants
     const documentationExports = generateDocumentationExports(
-      parsedFiles.map(f => ({ content: f.content, examples: f.examples }))
+      parsedFiles.map(f => ({ type: f.type, content: f.content, examples: f.examples }))
     );
     writeFileSync(
       join(generatedDir, 'docs.ts'),
