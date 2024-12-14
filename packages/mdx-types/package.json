@@ -9,7 +9,8 @@
     "dist"
   ],
   "scripts": {
-    "prebuild": "NODE_OPTIONS='--loader ts-node/esm' ts-node --esm scripts/generate-types.ts",
+    "extract-docs": "NODE_OPTIONS='--loader ts-node/esm' ts-node --esm scripts/extract-docs.ts",
+    "prebuild": "pnpm extract-docs && NODE_OPTIONS='--loader ts-node/esm' ts-node --esm scripts/generate-types.ts",
     "build": "tsc",
     "prepublishOnly": "pnpm build"
   },
@@ -20,5 +21,10 @@
     "documentation"
   ],
   "author": "MDX.org.ai",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
 }
