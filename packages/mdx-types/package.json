@@ -1,5 +1,5 @@
 {
-  "name": "@mdx.org.ai/types",
+  "name": "mdx.org.ai",
   "version": "0.1.0",
   "description": "TypeScript types for MDX.org.ai file types and documentation",
   "type": "module",
@@ -19,12 +19,5 @@
     "documentation"
   ],
   "author": "MDX.org.ai",
-  "license": "MIT",
-  "peerDependencies": {
-    "typescript": ">=4.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
-  }
+  "license": "MIT"
 }
