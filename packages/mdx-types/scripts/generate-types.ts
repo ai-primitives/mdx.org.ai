@@ -9,7 +9,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 function generateTypeDefinitions(metadataList: MDXMetadata[]): string {
-  // Collect all unique types and their properties
   const typeDefinitions = new Map<string, Map<string, Set<string>>>();
 
   metadataList.forEach(metadata => {
@@ -27,22 +26,18 @@ function generateTypeDefinitions(metadataList: MDXMetadata[]): string {
     });
   });
 
-  // Generate interfaces for each type
   const interfaces = Array.from(typeDefinitions.entries())
     .filter(([type]) => type !== 'Unknown')
     .map(([type, properties]) => {
       const propertyDefinitions = Array.from(properties.entries())
         .map(([key, types]) => {
           const typeStr = Array.from(types).join(' | ') || 'any';
-          // Handle JSON-LD properties
           if (key.startsWith('@')) {
             return `  ['${key}']?: ${typeStr};`;
           }
-          // Handle $type property
           if (key === '$type') {
             return `  $type: 'https://mdx.org.ai/${type}';`;
           }
-          // Handle other properties
           return `  ${key}?: ${typeStr};`;
         })
         .join('\n');
@@ -76,7 +71,6 @@ function extractExamplesFromContent(content: string): string[] {
 }
 
 function generateDocumentationExports(docs: { type: string; content: string; examples: string[] }[]): string {
-  // Group documentation by type
   const typeMap = new Map<string, { content: string; examples: string[] }>();
 
   docs.forEach(doc => {
@@ -95,8 +89,7 @@ function generateDocumentationExports(docs: { type: string; content: string; exa
 } as const;`;
   });
 
-  return `// Auto-generated documentation exports
-${exports.join('\n\n')}
+  return `${exports.join('\n\n')}
 
 export const documentation = {
   ${Array.from(typeMap.keys()).map(type => `${type}: ${type}_DOC`).join(',\n  ')}
@@ -110,44 +103,60 @@ export const getDocumentationByType = (type: string): typeof documentation[keyof
 
 async function generateTypes() {
   try {
-    // Find all MDX files in content directories
-    const mdxFiles = [
-      ...globSync(join(__dirname, '../content/types/*.mdx')),
-      ...globSync(join(__dirname, '../../../content/*.mdx')),
-      ...globSync(join(__dirname, '../../../examples/*.mdx'))
+    const contentDirs = [
+      join(__dirname, '../content/types'),
+      join(__dirname, '../../../content'),
+      join(__dirname, '../../../examples')
     ];
 
+    const mdxFiles = contentDirs.reduce((files: string[], dir) => {
+      if (existsSync(dir)) {
+        const dirFiles = globSync(join(dir, '*.mdx'));
+        return [...files, ...dirFiles];
+      }
+      console.warn(`Directory not found: ${dir}`);
+      return files;
+    }, []);
+
     if (mdxFiles.length === 0) {
-      console.warn('No MDX files found in content directories');
-      return;
+      console.error('No MDX files found in any content directories');
+      process.exit(1);
     }
 
-    // Parse MDX files and extract metadata, content, and examples
-    const parsedFiles = mdxFiles.map(file => {
-      const { metadata, content } = parseMDXFile(file);
-      const examples = extractExamplesFromContent(content);
-      return {
-        type: metadata.type || metadata['@type'] || 'Unknown',
-        metadata,
-        content,
-        examples
-      };
-    });
+    console.log(`Found ${mdxFiles.length} MDX files`);
 
-    // Create generated directory if it doesn't exist
+    const parsedFiles = mdxFiles.map(file => {
+      try {
+        const { metadata, content } = parseMDXFile(file);
+        const examples = extractExamplesFromContent(content);
+        return {
+          type: metadata.type || metadata['@type'] || 'Unknown',
+          metadata,
+          content,
+          examples
+        };
+      } catch (error) {
+        console.error(`Error parsing file ${file}:`, error);
+        return null;
+      }
+    }).filter((file): file is NonNullable<typeof file> => file !== null);
+
+    if (parsedFiles.length === 0) {
+      console.error('No valid MDX files could be parsed');
+      process.exit(1);
+    }
+
     const generatedDir = join(__dirname, '../src/generated');
     if (!existsSync(generatedDir)) {
       mkdirSync(generatedDir, { recursive: true });
     }
 
-    // Generate type definitions
     const typeDefinitions = generateTypeDefinitions(parsedFiles.map(f => f.metadata));
     writeFileSync(
       join(generatedDir, 'types.ts'),
       typeDefinitions
     );
 
-    // Generate documentation constants
     const documentationExports = generateDocumentationExports(
       parsedFiles.map(f => ({ type: f.type, content: f.content, examples: f.examples }))
     );
@@ -156,11 +165,15 @@ async function generateTypes() {
       documentationExports
     );
 
-    console.log(`Successfully generated types and documentation from ${mdxFiles.length} MDX files`);
+    console.log(`Successfully generated types and documentation from ${parsedFiles.length} MDX files`);
   } catch (error) {
     console.error('Error generating types:', error);
     process.exit(1);
   }
 }
 
-generateTypes();
+// Execute the async function with proper error handling
+generateTypes().catch(error => {
+  console.error('Failed to generate types:', error);
+  process.exit(1);
+});
