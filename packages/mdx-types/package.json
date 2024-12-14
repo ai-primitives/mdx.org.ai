@@ -23,7 +23,9 @@
   "author": "MDX.org.ai",
   "license": "MIT",
   "devDependencies": {
+    "@types/glob": "^8.1.0",
     "@types/node": "^20.11.16",
+    "glob": "^11.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }
