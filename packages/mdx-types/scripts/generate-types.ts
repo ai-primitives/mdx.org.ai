@@ -174,6 +174,10 @@ async function generateTypes() {
 
 // Execute the async function with proper error handling
 generateTypes().catch(error => {
-  console.error('Failed to generate types:', error);
+  console.error('Failed to generate types:', {
+    message: error.message,
+    stack: error.stack,
+    details: JSON.stringify(error, null, 2)
+  });
   process.exit(1);
 });
