@@ -4,13 +4,13 @@
  */
 
 // Export base types
-export * from './types';
+export * from './types.js';
 
 // Export MDX type interfaces
-export * from './mdx-types';
+export * from './mdx-types/index.js';
 
 // Export documentation strings
-export * from './docs';
+export * from './docs/index.js';
 
 // Utility functions (placeholders for future implementation)
 export const validateMDXType = (type: string): boolean => {

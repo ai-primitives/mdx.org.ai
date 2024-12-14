@@ -1,7 +1,7 @@
 /**
  * Type definitions for specific MDX types
  */
-import type { MDXFrontmatter } from '../types';
+import type { MDXFrontmatter } from '../types.js';
 
 export interface AIMatter extends MDXFrontmatter {
   $type: 'https://mdx.org.ai/AI';
