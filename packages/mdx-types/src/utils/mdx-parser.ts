@@ -68,8 +68,11 @@ export function parseMDXFile(filePath: string): MDXParseResult {
     if (firstNode?.type === 'yaml') {
       try {
         frontmatter = parseYaml((firstNode as Yaml).value);
+        if (!frontmatter || typeof frontmatter !== 'object') {
+          throw new Error('Frontmatter must be a valid YAML object');
+        }
       } catch (e) {
-        console.warn(`Warning: Failed to parse frontmatter in ${filePath}: ${e}`);
+        throw new Error(`Failed to parse frontmatter in ${filePath}: ${e}`);
       }
     }
 
