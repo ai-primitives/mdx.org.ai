@@ -1,4 +1,6 @@
 const nextra = require('nextra')
+const remarkGfm = require('remark-gfm')
+const remarkFrontmatter = require('remark-frontmatter')
 
 const withNextra = nextra({
   theme: 'nextra-theme-docs',
@@ -9,7 +11,9 @@ const withNextra = nextra({
   },
   mdxOptions: {
     remarkPlugins: [
-      // Include existing remark plugins
+      remarkGfm,
+      remarkFrontmatter,
+      require('@mdx-js/mdx').remarkPlugins
     ]
   }
 })
