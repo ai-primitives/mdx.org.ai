@@ -2,12 +2,13 @@
   "name": "site",
   "license": "MIT",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "next build",
     "dev": "next --turbopack",
     "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind",
     "start": "next start",
-    "generate-types": "NODE_OPTIONS='--loader ts-node/esm' ts-node --esm scripts/generate-types.ts",
+    "generate-types": "NODE_OPTIONS='--experimental-loader ts-node/esm --no-warnings' ts-node --esm --swc scripts/generate-types.ts",
     "prebuild": "pnpm generate-types"
   },
   "dependencies": {
