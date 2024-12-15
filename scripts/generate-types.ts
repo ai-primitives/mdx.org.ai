@@ -7,7 +7,16 @@ import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-function generateTypeDefinitions(metadataList: any[]): string {
+interface MDXMetadata {
+  $type: string;
+  title: string;
+  description: string;
+  $context?: string;
+  $id?: string;
+  [key: string]: any;
+}
+
+function generateTypeDefinitions(metadataList: MDXMetadata[]): string {
   const typeDefinitions = new Map<string, Map<string, Set<any>>>();
 
   metadataList.forEach(metadata => {
@@ -89,20 +98,20 @@ async function main() {
     console.log('Searching for MDX files in directories:');
     contentDirs.forEach(dir => console.log(`- ${dir}`));
 
-    const mdxFiles = contentDirs.reduce((files: string[], dir) => {
+    const mdxFiles = await Promise.all(contentDirs.map(async (dir) => {
       if (existsSync(dir)) {
         try {
           const dirFiles = globSync(join(dir, '*.mdx'));
           console.log(`Found ${dirFiles.length} MDX files in ${dir}`);
-          return [...files, ...dirFiles];
+          return dirFiles;
         } catch (error) {
           console.error(`Error searching directory ${dir}:`, error);
-          return files;
+          return [];
         }
       }
       console.warn(`Directory not found: ${dir}`);
-      return files;
-    }, []);
+      return [];
+    })).then(files => files.flat());
 
     if (mdxFiles.length === 0) {
       throw new Error('No MDX files found in any content directories');
@@ -110,19 +119,19 @@ async function main() {
 
     console.log(`\nProcessing ${mdxFiles.length} MDX files...`);
 
-    const parsedFiles = mdxFiles.map(file => {
+    const parsedFiles = await Promise.all(mdxFiles.map(async (file) => {
       try {
         console.log(`Parsing ${file}...`);
-        const { metadata, content } = parseMDXFile(file);
-        if (!metadata.$type && !metadata.title && !metadata.description) {
+        const result = await Promise.resolve(parseMDXFile(file));
+        if (!result.metadata.$type && !result.metadata.title && !result.metadata.description) {
           console.warn(`Warning: File ${file} is missing required frontmatter fields ($type, title, description)`);
         }
-        return { metadata, content };
+        return result;
       } catch (error) {
         console.error(`Error parsing file ${file}:`, error);
         return null;
       }
-    }).filter((file): file is NonNullable<typeof file> => file !== null);
+    })).then(files => files.filter((file): file is NonNullable<typeof file> => file !== null));
 
     if (parsedFiles.length === 0) {
       throw new Error('No valid MDX files could be parsed');
@@ -137,7 +146,7 @@ async function main() {
     const typeDefinitions = generateTypeDefinitions(parsedFiles.map(f => f.metadata));
     const typesPath = join(generatedDir, 'types.ts');
     console.log(`\nWriting generated types to ${typesPath}`);
-    writeFileSync(typesPath, typeDefinitions);
+    await Promise.resolve(writeFileSync(typesPath, typeDefinitions));
 
     console.log(`\nSuccessfully generated types from ${parsedFiles.length} MDX files`);
     console.log('Generated types directory:', generatedDir);

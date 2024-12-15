@@ -8,11 +8,11 @@ import { Root, Code, Yaml } from 'mdast'
 import { Node } from 'unist'
 
 export interface MDXMetadata {
-  type: string;
-  id?: string;
-  context?: string;
+  $type: string;
   title: string;
   description: string;
+  $context?: string;
+  $id?: string;
   [key: string]: any;
 }
 
@@ -23,7 +23,6 @@ interface MDXParseResult {
 }
 
 function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata {
-  // Prioritize $ prefix over @ prefix for YAML-LD compatibility
   const type = frontmatter['$type'] || frontmatter['@type'] || '';
   const id = frontmatter['$id'] || frontmatter['@id'] || undefined;
   const context = frontmatter['$context'] || frontmatter['@context'] || 'https://mdx.org.ai';
@@ -34,7 +33,6 @@ function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata {
   if (!title) throw new Error('title is required in frontmatter');
   if (!description) throw new Error('description is required in frontmatter');
 
-  // Remove both $ and @ prefixed fields to avoid duplication
   const {
     $type, '@type': atType,
     $id, '@id': atId,
@@ -44,11 +42,11 @@ function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata {
   } = frontmatter;
 
   return {
-    type: type.replace('https://mdx.org.ai/', ''),
+    $type: type.replace('https://mdx.org.ai/', ''),
     title,
     description,
-    ...(id && { id }),
-    context,
+    ...(id && { $id: id }),
+    ...(context && { $context: context }),
     ...rest
   };
 }
