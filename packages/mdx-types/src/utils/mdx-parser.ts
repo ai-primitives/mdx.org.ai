@@ -23,6 +23,7 @@ interface MDXParseResult {
 }
 
 function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata {
+  // Prioritize $ prefix over @ prefix for YAML-LD compatibility
   const type = frontmatter['$type'] || frontmatter['@type'] || '';
   const id = frontmatter['$id'] || frontmatter['@id'] || undefined;
   const context = frontmatter['$context'] || frontmatter['@context'] || 'https://mdx.org.ai';
@@ -33,10 +34,17 @@ function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata {
   if (!title) throw new Error('title is required in frontmatter');
   if (!description) throw new Error('description is required in frontmatter');
 
-  const { $type, '@type': atType, $id, '@id': atId, '$context': dollarContext, '@context': atContext, ...rest } = frontmatter;
+  // Remove both $ and @ prefixed fields to avoid duplication
+  const {
+    $type, '@type': atType,
+    $id, '@id': atId,
+    $context: dollarContext,
+    '@context': atContext,
+    ...rest
+  } = frontmatter;
 
   return {
-    type,
+    type: type.replace('https://mdx.org.ai/', ''),
     title,
     description,
     ...(id && { id }),
