@@ -223,45 +223,64 @@ async function main() {
       log(`Processing file with absolute path: ${absolutePath}`);
 
       try {
-        await fsPromises.access(absolutePath, fsPromises.constants.R_OK);
-        log(`Verified file is readable: ${absolutePath}`);
-
-        const result = await parseMDXFile(absolutePath, true);
-        if (!result) {
-          console.warn(`No result from parsing ${absolutePath}`);
+        const result = await parseMDXFile(absolutePath, true).catch(error => {
+          console.error(`[Parse Error] Error parsing MDX file ${absolutePath}:`, {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+          });
           return null;
-        }
+        });
 
-        if (!result.metadata) {
-          console.warn(`No metadata found in ${absolutePath}`);
+        if (!result || !result.metadata) {
+          console.warn(`[Warning] No valid metadata found in ${absolutePath}`);
           return null;
         }
 
         if (!isValidMetadata(result.metadata)) {
-          console.warn(`Invalid metadata in ${absolutePath}:`, result.metadata);
+          console.warn(`[Warning] Invalid metadata structure in ${absolutePath}`);
           return null;
         }
 
-        log(`Successfully parsed ${absolutePath}`);
         return result;
       } catch (error) {
-        console.error(`Error processing ${absolutePath}:`, error);
+        console.error(`[Fatal Error] Unexpected error processing ${absolutePath}:`, {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        });
         return null;
       }
     });
-
+    console.log('[Progress] Waiting for parse promises to complete...');
     const parsedFiles = await Promise.all(parsePromises).catch(error => {
-      console.error('Error in Promise.all while parsing files:', error);
-      return [];
+      console.error('[Parse Error] Error in Promise.all while parsing files:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      return [] as (MDXParseResult | null)[];
     });
 
+    console.log('[Progress] Filtering valid files...');
     const validFiles = parsedFiles
-      .filter((result): result is NonNullable<typeof result> => result !== null)
+      .filter((result): result is NonNullable<typeof result> => {
+        if (!result) {
+          console.log('[Filter] Filtering out null result');
+          return false;
+        }
+        return true;
+      })
       .filter((result): result is ValidMDXParseResult => {
         try {
-          return isValidParseResult(result) && isValidMetadata(result.metadata);
+          const isValid = isValidParseResult(result) && isValidMetadata(result.metadata);
+          if (!isValid) {
+            console.log('[Filter] Filtering out invalid result:', {
+              hasMetadata: result.metadata !== null,
+              isValidParseResult: isValidParseResult(result),
+              isValidMetadata: result.metadata ? isValidMetadata(result.metadata) : false
+            });
+          }
+          return isValid;
         } catch (error) {
-          console.error('Error validating parse result:', error);
+          console.error('[Filter Error] Error validating parse result:', error);
           return false;
         }
       })
@@ -285,22 +304,37 @@ async function main() {
 
     const typeDefinitions = await generateTypeDefinitions(validFiles);
     log('Generated type definitions');
-
     const outputDir = resolve(__dirname, '..', 'packages/mdx-types/src/generated');
-    await fsPromises.mkdir(outputDir, { recursive: true }).catch(error => {
-      console.error('Error creating output directory:', error);
+    try {
+      await mkdir(outputDir, { recursive: true });
+      console.log('[Progress] Created output directory:', outputDir);
+    } catch (error) {
+      console.error('[Directory Error] Error creating output directory:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        dir: outputDir
+      });
       process.exit(1);
-    });
+    }
 
     const outputFile = join(outputDir, 'frontmatter.d.ts');
-    await fsPromises.writeFile(outputFile, typeDefinitions, 'utf-8').catch(error => {
-      console.error('Error writing type definitions:', error);
+    try {
+      console.log('[Progress] Writing type definitions to:', outputFile);
+      await writeFile(outputFile, typeDefinitions, 'utf-8');
+      log(`Type definitions written to ${outputFile}`);
+    } catch (error) {
+      console.error('[File Error] Error writing type definitions:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        file: outputFile
+      });
       process.exit(1);
+    }
+  } catch (mainError) {
+    console.error('[Fatal Error] Error in main function:', {
+      error: mainError instanceof Error ? mainError.message : String(mainError),
+      stack: mainError instanceof Error ? mainError.stack : undefined
     });
-
-    log(`Type definitions written to ${outputFile}`);
-  } catch (error) {
-    console.error('Error in main function:', error);
     process.exit(1);
   }
 }
