@@ -371,7 +371,17 @@ const main = async () => {
     log(`Successfully parsed ${validFiles.length} valid MDX files`);
     console.log('[Progress] Generating type definitions...');
     try {
-      const typeDefinitions = await generateTypeDefinitions(validFiles);
+      const typeDefinitions = await generateTypeDefinitions(validFiles).catch(error => {
+        console.error('[Fatal Error] Error generating type definitions:', {
+          error: error instanceof Error ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+          } : error,
+          filesCount: validFiles.length
+        });
+        return null;
+      });
 
       if (!typeDefinitions) {
         console.error('[Error] Failed to generate type definitions');
@@ -381,12 +391,32 @@ const main = async () => {
       const outputDir = resolve(__dirname, '..', 'packages/mdx-types/src/generated');
       console.log('[Debug] Creating output directory...');
       try {
-        await mkdir(outputDir, { recursive: true });
+        await mkdir(outputDir, { recursive: true }).catch(error => {
+          console.error('[Fatal Error] Error creating output directory:', {
+            error: error instanceof Error ? {
+              name: error.name,
+              message: error.message,
+              stack: error.stack
+            } : error,
+            outputDir
+          });
+          throw error;
+        });
         console.log(`[Progress] Created output directory: ${outputDir}`);
 
         const outputFile = join(outputDir, 'frontmatter.d.ts');
         console.log('[Debug] Writing type definitions to file...');
-        await writeFile(outputFile, typeDefinitions, 'utf-8');
+        await writeFile(outputFile, typeDefinitions, 'utf-8').catch(error => {
+          console.error('[Fatal Error] Error writing type definitions:', {
+            error: error instanceof Error ? {
+              name: error.name,
+              message: error.message,
+              stack: error.stack
+            } : error,
+            outputFile
+          });
+          throw error;
+        });
         console.log(`[Success] Type definitions written to ${outputFile}`);
       } catch (error) {
         console.error('[Fatal Error] Error in file operations:', {
