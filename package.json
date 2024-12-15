@@ -8,7 +8,8 @@
     "dev": "next --turbopack",
     "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind",
     "start": "next start",
-    "generate-types": "NODE_OPTIONS=\"--loader ts-node/esm\" ts-node --esm scripts/generate-types.ts"
+    "generate-types": "NODE_OPTIONS=\"--loader ts-node/esm\" ts-node --esm scripts/generate-types.ts",
+    "update-frontmatter": "NODE_OPTIONS=\"--loader ts-node/esm\" ts-node --esm scripts/update-frontmatter.ts"
   },
   "dependencies": {
     "@theguild/remark-mermaid": "^0.1.3",
@@ -26,6 +27,7 @@
     "@types/glob": "^8.1.0",
     "@types/mdast": "^4.0.3",
     "@types/node": "^20.17.10",
+    "@types/react": "19.0.1",
     "@types/unist": "^3.0.2",
     "glob": "^10.3.10",
     "pagefind": "^1.1.1",

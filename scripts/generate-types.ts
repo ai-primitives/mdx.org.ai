@@ -78,6 +78,9 @@ async function generateTypeDefinitions(files: ValidMDXParseResult[]): Promise<st
 
     console.log('[Debug] Generating property definitions...');
 
+    // Track used type names to prevent duplicates
+    const usedTypes = new Set<string>();
+
     // Generate property definitions with better error handling
     const propertyDefinitions = await Promise.all(
       files.map(async (file) => {
@@ -87,14 +90,24 @@ async function generateTypeDefinitions(files: ValidMDXParseResult[]): Promise<st
             return null;
           }
 
-          const type = file.metadata.$type?.replace(/^https:\/\/mdx\.org\.ai\//, '');
-          if (!type) {
+          const rawType = file.metadata.$type?.replace(/^https:\/\/mdx\.org\.ai\//, '');
+          if (!rawType) {
             console.warn('[Warning] Missing or invalid $type in file:', JSON.stringify(file.metadata, null, 2));
             return null;
           }
 
+          // Sanitize type name: replace hyphens with underscores and ensure valid identifier
+          const type = rawType.replace(/-/g, '_');
+
+          // Skip duplicate types
+          if (usedTypes.has(type)) {
+            console.log(`[Info] Skipping duplicate type: ${type}`);
+            return null;
+          }
+          usedTypes.add(type);
+
           return `export interface ${type}Frontmatter extends MDXFrontmatter {
-  $type: '${type}';
+  $type: '${rawType}';
 }`;
         } catch (error) {
           console.error('[Type Generation Error] Error processing file:', {
