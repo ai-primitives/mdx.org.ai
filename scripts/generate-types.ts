@@ -159,7 +159,7 @@ async function main() {
     });
 
     const validParsedFiles = parsedFiles
-      .filter((file): file is NonNullable<typeof file> => {
+      .filter((file: MDXParseResult | null): file is NonNullable<typeof file> => {
         if (!file) {
           log('Skipping null file result');
           return false;
