@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-// Enable detailed logging
 const debug = true;
 const log = (...args: any[]) => debug && console.log(...args);
 
@@ -13,8 +12,7 @@ process.on('unhandledRejection', (reason, promise) => {
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { globSync } from 'glob';
-import { parseMDXFile } from '../packages/mdx-types/src/utils/mdx-parser.js';
-import type { MDXParseResult, MDXMetadata } from '../packages/mdx-types/src/utils/mdx-parser.js';
+import { parseMDXFile, type MDXParseResult, type MDXMetadata, isValidMetadata } from '../packages/mdx-types/src/utils/mdx-parser.js';
 import { promises as fs, existsSync, mkdirSync } from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,7 +21,7 @@ const __dirname = dirname(__filename);
 log('Starting type generation script...');
 log('Current directory:', __dirname);
 
-function generateTypeDefinitions(metadataList: MDXMetadata[]): string {
+function generateTypeDefinitions(metadataList: ValidMDXParseResult['metadata'][]): string {
   const normalizeType = (type: string) => type.replace(/^https:\/\/mdx\.org\.ai\//, '');
 
   const uniqueTypes = new Set(
@@ -74,13 +72,21 @@ export interface MDXFrontmatter {
 `;
 }
 
-interface ValidMDXParseResult extends MDXParseResult {
+interface ValidMDXParseResult {
   metadata: {
     $type: string;
     title: string;
     description: string;
-    [key: string]: unknown;
+    $context?: string;
+    $id?: string;
+    [key: string]: any;
   };
+  content: string;
+  examples: string[];
+}
+
+function isValidParseResult(file: MDXParseResult | null): file is ValidMDXParseResult {
+  return file !== null && file.metadata !== null && isValidMetadata(file.metadata);
 }
 
 async function main() {
@@ -96,14 +102,19 @@ async function main() {
 
     log('Content directories to process:', contentDirs);
 
-    // Verify directories exist
     for (const dir of contentDirs) {
-      if (!existsSync(dir)) {
-        log(`Warning: Directory does not exist: ${dir}`);
+      try {
+        if (!existsSync(dir)) {
+          log(`Warning: Directory does not exist: ${dir}`);
+          continue;
+        }
+        await fs.access(dir);
+        log(`Directory verified: ${dir}`);
+      } catch (error) {
+        console.error(`Error accessing directory ${dir}:`, error);
       }
     }
 
-    // Find all MDX files
     const mdxFiles = contentDirs.flatMap(dir => {
       try {
         if (!existsSync(dir)) {
@@ -123,19 +134,17 @@ async function main() {
     });
 
     if (mdxFiles.length === 0) {
-      throw new Error('No MDX files found in any of the content directories');
+      log('No MDX files found in any of the content directories');
+      process.exit(0);
     }
 
     log(`Total MDX files found: ${mdxFiles.length}`);
     log('MDX files:', mdxFiles);
 
-    // Parse all MDX files
     const parsedFiles = await Promise.all(
       mdxFiles.map(async (file) => {
         try {
           log(`Parsing file: ${file}`);
-          const content = await fs.readFile(file, 'utf-8');
-          log(`File content length: ${content.length} bytes`);
           const result = await parseMDXFile(file);
           log(`Successfully parsed ${file}`);
           return result;
@@ -149,53 +158,51 @@ async function main() {
       return [];
     });
 
-    const validParsedFiles = parsedFiles.filter((file): file is ValidMDXParseResult => {
-      if (!file) return false;
-      if (!file.metadata) return false;
-
-      const metadata = file.metadata;
-      const hasRequiredFields =
-        typeof metadata.$type === 'string' &&
-        typeof metadata.title === 'string' &&
-        typeof metadata.description === 'string';
-
-      if (!hasRequiredFields) {
-        log(`Invalid metadata in file: missing required fields`);
-        return false;
-      }
-      return true;
-    });
+    const validParsedFiles = parsedFiles
+      .filter((file): file is NonNullable<typeof file> => {
+        if (!file) {
+          log('Skipping null file result');
+          return false;
+        }
+        if (!file.metadata) {
+          log('Skipping file with null metadata');
+          return false;
+        }
+        if (!isValidMetadata(file.metadata)) {
+          log('Skipping file with invalid metadata structure');
+          return false;
+        }
+        return true;
+      }) as ValidMDXParseResult[];
 
     if (validParsedFiles.length === 0) {
-      throw new Error('No valid MDX files were successfully parsed');
+      log('No valid MDX files were successfully parsed');
+      process.exit(0);
     }
 
     log(`Successfully parsed ${validParsedFiles.length} MDX files`);
 
-    // Generate type definitions
-    const metadataList = validParsedFiles.map(file => {
-      const metadata = file.metadata;
-      // Create a new object with validated fields
-      return {
-        ...metadata,
-        $type: metadata.$type.replace(/^https:\/\/mdx\.org\.ai\//, ''),
-        title: metadata.title,
-        description: metadata.description
-      };
-    });
-    const typeDefinitions = generateTypeDefinitions(metadataList);
+    try {
+      const metadataList = validParsedFiles.map(file => ({
+        ...file.metadata,
+        $type: file.metadata.$type.replace(/^https:\/\/mdx\.org\.ai\//, '')
+      }));
 
-    // Ensure the generated directory exists
-    const generatedDir = join(__dirname, '../packages/mdx-types/src/generated');
-    if (!existsSync(generatedDir)) {
-      log(`Creating generated types directory: ${generatedDir}`);
-      mkdirSync(generatedDir, { recursive: true });
+      const typeDefinitions = generateTypeDefinitions(metadataList);
+
+      const generatedDir = join(__dirname, '../packages/mdx-types/src/generated');
+      if (!existsSync(generatedDir)) {
+        log(`Creating generated types directory: ${generatedDir}`);
+        mkdirSync(generatedDir, { recursive: true });
+      }
+
+      const outputFile = join(generatedDir, 'types.ts');
+      await fs.writeFile(outputFile, typeDefinitions);
+      log(`Successfully wrote type definitions to ${outputFile}`);
+    } catch (error) {
+      console.error('Error generating type definitions:', error);
+      process.exit(1);
     }
-
-    // Write the generated types
-    const outputFile = join(generatedDir, 'types.ts');
-    await fs.writeFile(outputFile, typeDefinitions);
-    log(`Successfully wrote type definitions to ${outputFile}`);
 
   } catch (error) {
     console.error('Error in main function:', error);
@@ -206,7 +213,6 @@ async function main() {
   }
 }
 
-// Execute main function with proper error handling
 main().catch(error => {
   console.error('Unhandled error in main:', error);
   if (error instanceof Error) {

@@ -17,9 +17,19 @@ export interface MDXMetadata {
 }
 
 export interface MDXParseResult {
-  metadata: MDXMetadata;
+  metadata: MDXMetadata | null;
   content: string;
   examples: string[];
+}
+
+export function isValidMetadata(metadata: unknown): metadata is MDXMetadata {
+  if (!metadata || typeof metadata !== 'object') return false;
+  const m = metadata as Record<string, unknown>;
+  return (
+    typeof m.$type === 'string' &&
+    typeof m.title === 'string' &&
+    typeof m.description === 'string'
+  );
 }
 
 function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata {
@@ -66,6 +76,10 @@ export async function parseMDXFile(filePath: string): Promise<MDXParseResult> {
   try {
     console.log(`Reading file: ${filePath}`);
     const content = await fs.readFile(filePath, 'utf-8');
+
+    if (!content.trim()) {
+      throw new Error(`Empty file: ${filePath}`);
+    }
 
     const processor = unified()
       .use(remarkParse)
