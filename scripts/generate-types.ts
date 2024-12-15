@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-// Add unhandledRejection handler at the top level
 process.on('unhandledRejection', (error: unknown) => {
   console.error('UnhandledPromiseRejection:', error);
   process.exit(1);
@@ -9,7 +8,7 @@ process.on('unhandledRejection', (error: unknown) => {
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { globSync } from 'glob';
-import { parseMDXFile } from '../packages/mdx-types/src/utils/mdx-parser.js';
+import { parseMDXFile, type MDXParseResult } from '../packages/mdx-types/src/utils/mdx-parser.js';
 import { promises as fs, existsSync, mkdirSync } from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -94,7 +93,6 @@ export type MDXType = ${interfaces.length > 0
 `;
 }
 
-// Execute type generation for the main project
 async function main() {
   try {
     console.log('Starting type generation process...');
@@ -133,21 +131,21 @@ async function main() {
     }
 
     console.log('\nProcessing MDX files...');
-    const parsedFiles = await Promise.all(mdxFiles.map(async (file) => {
+    const parsedFiles = await Promise.all(mdxFiles.map(async (filePath: string) => {
       try {
-        console.log(`Parsing ${file}...`);
-        const result = await parseMDXFile(file);
-        console.log(`Successfully parsed ${file}`);
+        console.log(`Parsing ${filePath}...`);
+        const result = await parseMDXFile(filePath);
+        console.log(`Successfully parsed ${filePath}`);
         if (!result.metadata.$type || !result.metadata.title || !result.metadata.description) {
-          console.warn(`Warning: File ${file} is missing required frontmatter fields ($type, title, description)`);
+          console.warn(`Warning: File ${filePath} is missing required frontmatter fields ($type, title, description)`);
         }
         return result;
       } catch (error) {
-        console.error(`Error parsing file ${file}:`, error);
+        console.error(`Error parsing file ${filePath}:`, error);
         return null;
       }
-    })).then(files => {
-      const validFiles = files.filter((file): file is NonNullable<typeof file> => file !== null);
+    })).then((files: (MDXParseResult | null)[]) => {
+      const validFiles = files.filter((file): file is MDXParseResult => file !== null);
       console.log(`Successfully parsed ${validFiles.length} out of ${files.length} files`);
       return validFiles;
     });
@@ -163,7 +161,7 @@ async function main() {
       mkdirSync(generatedDir, { recursive: true });
     }
 
-    const typeDefinitions = generateTypeDefinitions(parsedFiles.map(f => f.metadata));
+    const typeDefinitions = generateTypeDefinitions(parsedFiles.map((f: MDXParseResult) => f.metadata));
     const typesPath = join(generatedDir, 'types.ts');
     console.log(`\nWriting generated types to ${typesPath}`);
     await fs.writeFile(typesPath, typeDefinitions);
@@ -183,7 +181,6 @@ async function main() {
   }
 }
 
-// Run the main function with proper error handling
 (async () => {
   try {
     await main();

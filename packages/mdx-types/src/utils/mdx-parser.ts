@@ -16,7 +16,7 @@ export interface MDXMetadata {
   [key: string]: any;
 }
 
-interface MDXParseResult {
+export interface MDXParseResult {
   metadata: MDXMetadata;
   content: string;
   examples: string[];
