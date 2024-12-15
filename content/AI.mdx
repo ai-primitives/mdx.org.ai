@@ -1,7 +1,111 @@
 ---
 $type: https://mdx.org.ai/AI
-title: AI
-description: Type definition for a i in MDX
-
+$context: https://mdx.org.ai
+title: Generative AI and MDX
+description: MDX provides powerful capabilities for working with Large Language Models and other AI tools, enabling seamless integration between content creation and AI technologies.
 ---
+
+# Generative AI
+
+MDX provides powerful capabilities for working with Large Language Models and other AI tools. This integration enables seamless interaction between content creation and AI technologies.
+
+## LLM Integration
+
+MDX's native compatibility with Large Language Models makes it an ideal format for AI-powered content:
+
+- **Native Markdown Compatibility**: LLMs naturally output Markdown-formatted text, making MDX a perfect fit for AI-generated content
+- **Structured Data**: YAML frontmatter allows metadata and context to be passed to AI models
+- **Type Definitions**: JSON-LD integration enables semantic understanding of content structure
+- **Component Integration**: Embed AI-powered React components directly in your content
+
+## Use Cases
+
+### Content Generation
+- Automated documentation generation from codebases
+- AI-assisted content writing and editing
+- Dynamic content adaptation based on user context
+
+### Interactive Components
+- Embedded chat interfaces with LLMs
+- Real-time content suggestions
+- AI-powered code completion and explanation
+
+### Knowledge Management
+- Semantic content organization
+- Automated content categorization
+- Intelligent cross-referencing
+
+## Examples
+
+### Basic LLM Integration
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: AIComponent
+model: gpt-4
+temperature: 0.7
+---
+
+<AIPrompt>
+  Explain the concept of React hooks to a beginner programmer.
+</AIPrompt>
+
+<AIResponse>
+  {/* AI-generated explanation will appear here */}
+</AIResponse>
+```
+
+### Interactive AI Component
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: ChatInterface
+model: claude-2
+context: technical-documentation
+---
+
+<AIChatBot>
+  <SystemPrompt>
+    You are a helpful assistant specifically knowledgeable about MDX and React.
+  </SystemPrompt>
+
+  <ChatInterface theme="light" />
+</AIChatBot>
+```
+
+### Content Enhancement
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: EnhancedContent
+features: ["summarization", "translation", "explanation"]
+---
+
+<AIEnhancer>
+  {/* Original content */}
+  # Complex Technical Concept
+
+  <AISummary />
+  <AITranslation language="es" />
+  <AIExplanation level="beginner" />
+</AIEnhancer>
+```
+
+## Best Practices
+
+1. **Model Configuration**: Always specify model parameters in frontmatter for reproducibility
+2. **Error Handling**: Include fallback content for when AI services are unavailable
+3. **Context Management**: Provide clear context and constraints in system prompts
+4. **Performance**: Use streaming responses for better user experience
+5. **Privacy**: Be mindful of data handling when integrating with AI services
+
+## Resources
+
+- [OpenAI Documentation](https://platform.openai.com/docs)
+- [Anthropic Claude Documentation](https://docs.anthropic.com)
+- [MDX AI Components](https://mdx.org.ai/packages/mdxai)
+- [AI Integration Examples](https://mdx.org.ai/examples)
 

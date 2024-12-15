@@ -1,7 +1,204 @@
 ---
-$type: https://mdx.org.ai/remark-mdxld
-title: remark-mdxld
-description: Type definition for remark-mdxld in MDX
-
+$type: https://mdx.org.ai/Package
+$context: https://mdx.org.ai
+$id: https://mdx.org.ai/packages/remark-mdxld
+title: remark-mdxld Package
+description: Remark plugin for processing MDX Linked Data, providing transformation rules and utilities for handling JSON-LD metadata in MDX documents within the remark ecosystem
 ---
 
+# remark-mdxld
+
+[remark-mdxld](https://npmjs.com/remark-mdxld) is a remark plugin for processing MDX Linked Data. It provides transformation rules and utilities for handling JSON-LD metadata in MDX documents within the remark ecosystem.
+
+## Installation
+
+```bash
+# Using npm
+npm install remark-mdxld
+
+# Using yarn
+yarn add remark-mdxld
+
+# Using pnpm
+pnpm add remark-mdxld
+```
+
+## Usage
+
+### Basic Example
+
+```javascript
+import { unified } from 'unified'
+import remarkParse from 'remark-parse'
+import remarkMDXLD from 'remark-mdxld'
+import remarkStringify from 'remark-stringify'
+
+// Create processor
+const processor = unified()
+  .use(remarkParse)
+  .use(remarkMDXLD)
+  .use(remarkStringify)
+
+// Process MDX content
+const result = await processor.process(`---
+$context: https://schema.org
+$type: Article
+title: My First Post
+author:
+  name: John Doe
+---
+
+# Introduction
+Content here...
+`)
+```
+
+### Advanced Usage
+
+```javascript
+import remarkMDXLD from 'remark-mdxld'
+
+// Configure plugin with options
+const processor = unified()
+  .use(remarkParse)
+  .use(remarkMDXLD, {
+    validate: true,
+    schemas: ['https://schema.org/Article'],
+    transformers: [
+      normalizeMetadata,
+      validateAuthors
+    ]
+  })
+  .use(remarkStringify)
+```
+
+## API Reference
+
+### Plugin Options
+
+```typescript
+interface MDXLDOptions {
+  validate?: boolean
+  schemas?: string[]
+  transformers?: TransformerFunction[]
+  strict?: boolean
+}
+
+type TransformerFunction = (tree: Node, data: Record<string, any>) => void
+```
+
+### Transformation Rules
+
+#### Default Rules
+- Extracts frontmatter metadata
+- Validates JSON-LD syntax
+- Normalizes $context references
+- Processes nested objects
+- Resolves schema references
+
+#### Custom Transformers
+
+```javascript
+function customTransformer(tree, data) {
+  // Modify AST or metadata
+  tree.children.forEach(node => {
+    if (node.type === 'heading') {
+      // Transform heading nodes
+    }
+  })
+
+  // Update metadata
+  data.processed = true
+}
+```
+
+## Examples
+
+### Content Processing Pipeline
+
+```javascript
+import { unified } from 'unified'
+import remarkParse from 'remark-parse'
+import remarkMDXLD from 'remark-mdxld'
+import remarkGfm from 'remark-gfm'
+import remarkStringify from 'remark-stringify'
+
+// Create a processing pipeline
+const pipeline = unified()
+  .use(remarkParse)
+  .use(remarkGfm)
+  .use(remarkMDXLD, {
+    validate: true,
+    transformers: [
+      // Add timestamps
+      (tree, data) => {
+        data.processedAt = new Date().toISOString()
+      },
+      // Validate internal links
+      (tree) => {
+        const links = []
+        visit(tree, 'link', node => {
+          links.push(node.url)
+        })
+        validateLinks(links)
+      }
+    ]
+  })
+  .use(remarkStringify)
+
+// Process content
+const result = await pipeline.process(content)
+```
+
+### Schema Validation
+
+```javascript
+import { unified } from 'unified'
+import remarkParse from 'remark-parse'
+import remarkMDXLD from 'remark-mdxld'
+import { createSchema } from 'mdxld'
+
+// Create custom schema
+const blogSchema = createSchema({
+  '$type': 'BlogPosting',
+  required: ['title', 'author'],
+  properties: {
+    title: { type: 'string' },
+    author: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        email: { type: 'string' }
+      }
+    }
+  }
+})
+
+// Configure processor with schema
+const processor = unified()
+  .use(remarkParse)
+  .use(remarkMDXLD, {
+    validate: true,
+    schemas: [blogSchema]
+  })
+```
+
+## Best Practices
+
+1. Always validate metadata against schemas
+2. Use type-safe transformers
+3. Keep transformations atomic and focused
+4. Handle errors gracefully
+5. Cache processed results when possible
+6. Follow remark plugin conventions
+
+## Related Packages
+- [mdxai](./mdxai) - MDX AI integration library
+- [mdxe](./mdxe) - MDX execution environment
+- [mdxld](./mdxld) - Core MDX Linked Data library
+- [react-mdxld](./react-mdxld) - React components for MDX Linked Data
+
+## See Also
+- [Remark Documentation](https://remark.js.org)
+- [MDX Documentation](https://mdxjs.com)
+- [JSON-LD Specification](https://json-ld.org)

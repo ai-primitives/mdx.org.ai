@@ -1,7 +1,135 @@
 ---
 $type: https://mdx.org.ai/BlogPost
-title: BlogPost
-description: Type definition for blog post in MDX
-
+$context: https://mdx.org.ai
+title: BlogPost Type Definition
+description: The BlogPost type represents an individual blog post within an MDX blog. It provides structure for post content, metadata, and interactive elements while maintaining compatibility with standard blog features and SEO requirements.
 ---
 
+# BlogPost Type
+
+## Overview
+
+The BlogPost type represents an individual blog post within an MDX blog. It provides structure for post content, metadata, and interactive elements while maintaining compatibility with standard blog features and SEO requirements.
+
+## Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `title` | `string` | Yes | The title of the blog post |
+| `description` | `string` | Yes | A brief summary of the post content |
+| `date` | `string` | Yes | Publication date (ISO 8601 format) |
+| `author` | `object` | Yes | Author information |
+| `slug` | `string` | Yes | URL-friendly identifier |
+| `tags` | `string[]` | No | Array of relevant tags |
+| `category` | `string` | No | Primary category of the post |
+| `image` | `string` | No | Featured image URL |
+| `status` | `string` | No | Post status (draft/published) |
+| `series` | `object` | No | Series information if part of a series |
+
+## Examples
+
+### Standard Blog Post
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: BlogPost
+title: Getting Started with MDX
+description: Learn the basics of MDX and start building
+date: 2024-01-15T09:00:00Z
+author:
+  name: Jane Smith
+  bio: MDX Developer Advocate
+  avatar: /avatars/jane.jpg
+slug: getting-started-mdx
+tags:
+  - tutorial
+  - beginners
+  - mdx
+category: Tutorials
+image: /images/mdx-intro.jpg
+---
+
+<BlogPost>
+  <Header />
+  <TableOfContents />
+  <Content>
+    # Introduction to MDX
+
+    MDX combines the power of Markdown with JSX...
+  </Content>
+  <ShareButtons />
+  <AuthorBio />
+</BlogPost>
+```
+
+### Technical Tutorial Post
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: BlogPost
+title: Advanced MDX Patterns
+description: Deep dive into MDX implementation patterns
+date: 2024-01-16T10:00:00Z
+author:
+  name: Alex Chen
+  bio: Senior MDX Engineer
+slug: advanced-mdx-patterns
+category: Advanced
+series:
+  name: MDX Mastery
+  part: 2
+---
+
+<BlogPost>
+  <CodeDemo>
+    {/* Example code implementation */}
+  </CodeDemo>
+  <LiveEditor />
+  <PreviousNext />
+</BlogPost>
+```
+
+### Release Notes Post
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: BlogPost
+title: MDX 2.0 Release
+description: What's new in MDX 2.0
+date: 2024-01-17T08:00:00Z
+author:
+  name: MDX Team
+slug: mdx-2-release
+category: Releases
+status: published
+---
+
+<BlogPost>
+  <ReleaseHeader version="2.0.0" />
+  <ChangeLog />
+  <UpgradeGuide />
+  <Feedback />
+</BlogPost>
+```
+
+## Best Practices
+
+1. Use descriptive titles and slugs
+2. Include comprehensive metadata
+3. Optimize images and media
+4. Implement proper SEO tags
+5. Structure content with clear headings
+6. Include interactive elements where relevant
+
+## Related Types
+- [Blog](https://mdx.org.ai/Blog)
+- [Component](https://mdx.org.ai/Component)
+- [Function](https://mdx.org.ai/Function)
+
+## See Also
+- [MDX Blog Components](https://mdx.org.ai/packages/mdxe)
+- [Blog Post Guidelines](https://mdx.org.ai/guides/blog-posts)
+- [SEO Best Practices](https://mdx.org.ai/guides/seo)
