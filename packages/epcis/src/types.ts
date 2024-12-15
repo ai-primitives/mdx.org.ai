@@ -2,11 +2,12 @@ import { DataFormat } from '@clickhouse/client';
 import { ClickhouseClient } from './clickhouse';
 import type { Env as HonoBaseEnv } from 'hono/types';
 
-interface RateLimiter {
+export interface RateLimiter {
   limit(key: string): Promise<{
     success: boolean;
     limit: number;
     reset: number;
+    remaining: number;
   }>;
 }
 

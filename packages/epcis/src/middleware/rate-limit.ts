@@ -35,8 +35,9 @@ export const rateLimitMiddleware: MiddlewareHandler<HonoEnv> = async (c, next) =
   }
 
   try {
-    const { success, limit, reset } = await rateLimiter.limit(`${c.req.method}:${path}`);
-    const remaining = success ? limit - 1 : 0;
+    // Use a consistent key format for rate limiting
+    const rateKey = `${c.req.method}:${path}:${c.req.headers.get('x-forwarded-for') || 'local'}`;
+    const { success, limit, reset, remaining } = await rateLimiter.limit(rateKey);
 
     // Set standard rate limit headers (RFC 6585)
     c.header('RateLimit-Limit', limit.toString());

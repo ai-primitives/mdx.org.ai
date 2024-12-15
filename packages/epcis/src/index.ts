@@ -5,12 +5,23 @@ import type { Context, MiddlewareHandler } from 'hono';
 import { ClickhouseClient } from './clickhouse';
 import { eventValidationMiddleware } from './middleware/validation';
 import { rateLimitMiddleware } from './middleware/rate-limit';
+import { MockRateLimiter } from './services/mock-rate-limiter';
 import captureRoutes from './routes/capture';
 import queryRoutes from './routes/query';
 import subscriptionRoutes from './routes/subscription';
 import type { HonoEnv } from './types';
 
 const app = new Hono<HonoEnv>();
+
+// Initialize mock rate limiter for development
+const isDevelopment = process.env.NODE_ENV === 'development';
+if (isDevelopment) {
+  const mockRateLimiter = new MockRateLimiter(1000, 60);
+  app.use('*', async (c, next) => {
+    c.env.epcis_api = mockRateLimiter;
+    await next();
+  });
+}
 
 // Initialize Clickhouse client middleware
 const clickhouseMiddleware: MiddlewareHandler<HonoEnv> = async (c, next) => {
