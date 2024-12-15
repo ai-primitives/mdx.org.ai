@@ -17,7 +17,7 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-import { join } from 'path';
+import { join, resolve, isAbsolute, dirname } from 'path';
 import { existsSync } from 'fs';
 import { mkdir, writeFile } from 'fs/promises';
 import { glob } from 'glob';
@@ -29,7 +29,6 @@ import {
   isValidMetadata
 } from '../packages/mdx-types/src/utils/mdx-parser.js';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import { promises as fsPromises } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -174,7 +173,11 @@ async function main() {
     });
 
     const mdxFiles = await Promise.all(mdxFilesPromises).catch(error => {
-      console.error('Error in Promise.all while searching for MDX files:', error);
+      console.error('Error in Promise.all while searching for MDX files:', error instanceof Error ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      } : error);
       throw error;
     });
 
@@ -189,23 +192,44 @@ async function main() {
 
     const parsePromises = allMdxFiles.map(async (filePath) => {
       if (!filePath) {
+        log('Skipping null file path');
         return null;
       }
+
+      const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
+      log(`Processing file with absolute path: ${absolutePath}`);
+
       try {
-        log(`Parsing ${filePath}...`);
-        const result = await parseMDXFile(filePath, true);
-        if (!result || !result.metadata) {
-          console.warn(`No valid metadata found in ${filePath}`);
+        try {
+          await fsPromises.access(absolutePath, fsPromises.constants.R_OK);
+          log(`Verified file is readable: ${absolutePath}`);
+        } catch (error) {
+          console.error(`File not accessible: ${absolutePath}`, error);
           return null;
         }
+
+        log(`Parsing ${absolutePath}...`);
+        const result = await parseMDXFile(absolutePath, true);
+
+        if (!result) {
+          console.warn(`No result from parsing ${absolutePath}`);
+          return null;
+        }
+
+        if (!result.metadata) {
+          console.warn(`No metadata found in ${absolutePath}`);
+          return null;
+        }
+
         if (!isValidMetadata(result.metadata)) {
-          console.warn(`Invalid metadata in ${filePath}:`, result.metadata);
+          console.warn(`Invalid metadata in ${absolutePath}:`, result.metadata);
           return null;
         }
-        log(`Successfully parsed ${filePath}`);
+
+        log(`Successfully parsed ${absolutePath}`);
         return result;
       } catch (error) {
-        console.error(`Error parsing ${filePath}:`, error instanceof Error ? {
+        console.error(`Error parsing ${absolutePath}:`, error instanceof Error ? {
           name: error.name,
           message: error.message,
           stack: error.stack
@@ -215,7 +239,11 @@ async function main() {
     });
 
     const parsedFiles = await Promise.all(parsePromises).catch(error => {
-      console.error('Error in Promise.all while parsing files:', error);
+      console.error('Error in Promise.all while parsing files:', error instanceof Error ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      } : error);
       throw error;
     });
 
