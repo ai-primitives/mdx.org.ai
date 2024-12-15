@@ -132,3 +132,5 @@ dist
 # Generated MDX files
 packages/mdx-types/src/generated/
 packages/mdx-types/dist/
+/types
+*.d.ts

@@ -6,7 +6,9 @@
     "build": "next build",
     "dev": "next --turbopack",
     "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind",
-    "start": "next start"
+    "start": "next start",
+    "generate-types": "ts-node scripts/generate-types.js",
+    "prebuild": "pnpm generate-types"
   },
   "dependencies": {
     "@theguild/remark-mermaid": "^0.1.3",
