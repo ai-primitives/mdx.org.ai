@@ -86,25 +86,37 @@ async function main() {
       join(__dirname, '../examples')
     ];
 
+    console.log('Searching for MDX files in directories:');
+    contentDirs.forEach(dir => console.log(`- ${dir}`));
+
     const mdxFiles = contentDirs.reduce((files: string[], dir) => {
       if (existsSync(dir)) {
-        const dirFiles = globSync(join(dir, '*.mdx'));
-        return [...files, ...dirFiles];
+        try {
+          const dirFiles = globSync(join(dir, '*.mdx'));
+          console.log(`Found ${dirFiles.length} MDX files in ${dir}`);
+          return [...files, ...dirFiles];
+        } catch (error) {
+          console.error(`Error searching directory ${dir}:`, error);
+          return files;
+        }
       }
       console.warn(`Directory not found: ${dir}`);
       return files;
     }, []);
 
     if (mdxFiles.length === 0) {
-      console.error('No MDX files found in any content directories');
-      process.exit(1);
+      throw new Error('No MDX files found in any content directories');
     }
 
-    console.log(`Found ${mdxFiles.length} MDX files`);
+    console.log(`\nProcessing ${mdxFiles.length} MDX files...`);
 
     const parsedFiles = mdxFiles.map(file => {
       try {
+        console.log(`Parsing ${file}...`);
         const { metadata, content } = parseMDXFile(file);
+        if (!metadata.$type && !metadata.title && !metadata.description) {
+          console.warn(`Warning: File ${file} is missing required frontmatter fields ($type, title, description)`);
+        }
         return { metadata, content };
       } catch (error) {
         console.error(`Error parsing file ${file}:`, error);
@@ -113,25 +125,24 @@ async function main() {
     }).filter((file): file is NonNullable<typeof file> => file !== null);
 
     if (parsedFiles.length === 0) {
-      console.error('No valid MDX files could be parsed');
-      process.exit(1);
+      throw new Error('No valid MDX files could be parsed');
     }
 
     const generatedDir = join(__dirname, '../packages/mdx-types/src/generated');
     if (!existsSync(generatedDir)) {
+      console.log(`Creating generated types directory: ${generatedDir}`);
       mkdirSync(generatedDir, { recursive: true });
     }
 
     const typeDefinitions = generateTypeDefinitions(parsedFiles.map(f => f.metadata));
-    writeFileSync(
-      join(generatedDir, 'types.ts'),
-      typeDefinitions
-    );
+    const typesPath = join(generatedDir, 'types.ts');
+    console.log(`\nWriting generated types to ${typesPath}`);
+    writeFileSync(typesPath, typeDefinitions);
 
-    console.log(`Successfully generated types from ${parsedFiles.length} MDX files`);
+    console.log(`\nSuccessfully generated types from ${parsedFiles.length} MDX files`);
     console.log('Generated types directory:', generatedDir);
   } catch (error) {
-    console.error('Error generating types:', error);
+    console.error('\nError generating types:', error);
     process.exit(1);
   }
 }
