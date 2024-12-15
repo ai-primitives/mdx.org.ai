@@ -130,7 +130,7 @@ async function main() {
       'package',
       'packages/mdx-types/content/types'
     ].map(dir => {
-      const fullPath = join(__dirname, '..', dir);
+      const fullPath = resolve(__dirname, '..', dir);
       log(`Checking directory: ${fullPath}`);
       try {
         const exists = existsSync(fullPath);
@@ -178,7 +178,7 @@ async function main() {
         message: error.message,
         stack: error.stack
       } : error);
-      throw error;
+      return [];
     });
 
     const allMdxFiles = mdxFiles.flat();
@@ -196,21 +196,14 @@ async function main() {
         return null;
       }
 
-      const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
+      const absolutePath = isAbsolute(filePath) ? filePath : resolve(process.cwd(), filePath);
       log(`Processing file with absolute path: ${absolutePath}`);
 
       try {
-        try {
-          await fsPromises.access(absolutePath, fsPromises.constants.R_OK);
-          log(`Verified file is readable: ${absolutePath}`);
-        } catch (error) {
-          console.error(`File not accessible: ${absolutePath}`, error);
-          return null;
-        }
+        await fsPromises.access(absolutePath, fsPromises.constants.R_OK);
+        log(`Verified file is readable: ${absolutePath}`);
 
-        log(`Parsing ${absolutePath}...`);
         const result = await parseMDXFile(absolutePath, true);
-
         if (!result) {
           console.warn(`No result from parsing ${absolutePath}`);
           return null;
@@ -229,11 +222,7 @@ async function main() {
         log(`Successfully parsed ${absolutePath}`);
         return result;
       } catch (error) {
-        console.error(`Error parsing ${absolutePath}:`, error instanceof Error ? {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        } : error);
+        console.error(`Error processing ${absolutePath}:`, error);
         return null;
       }
     });
@@ -244,51 +233,46 @@ async function main() {
         message: error.message,
         stack: error.stack
       } : error);
-      throw error;
+      return [];
     });
 
-    const validParsedFiles = parsedFiles.filter(isValidParseResult);
-    log(`Successfully parsed ${validParsedFiles.length} valid MDX files out of ${parsedFiles.length} total files`);
-
-    if (validParsedFiles.length === 0) {
-      throw new Error('No valid MDX files found after parsing');
-    }
-
-    try {
-      const validFiles = validParsedFiles.map((file: ValidMDXParseResult) => ({
-        ...file,
-        metadata: {
-          ...file.metadata,
-          $type: file.metadata.$type.replace(/^https:\/\/mdx\.org\.ai\//, '')
+    const validFiles = parsedFiles
+      .filter((result): result is NonNullable<typeof result> => result !== null)
+      .filter((result): result is ValidMDXParseResult => {
+        try {
+          return isValidParseResult(result) && isValidMetadata(result.metadata);
+        } catch (error) {
+          console.error('Error validating parse result:', error);
+          return false;
         }
-      }));
-
-      log('Generating type definitions for files:', validFiles);
-      const typeDefinitions = await generateTypeDefinitions(validFiles);
-
-      const generatedDir = join(__dirname, '../packages/mdx-types/src/generated');
-      log(`Creating generated directory: ${generatedDir}`);
-      await mkdir(generatedDir, { recursive: true }).catch((error: TypeGenerationError) => {
-        console.error('Error creating generated directory:', error);
-        throw error;
+      })
+      .map((file: ValidMDXParseResult) => {
+        const cleanType = file.metadata.$type.replace(/^https:\/\/mdx\.org\.ai\//, '');
+        return {
+          ...file,
+          metadata: {
+            ...file.metadata,
+            $type: cleanType
+          }
+        } satisfies ValidMDXParseResult;
       });
 
-      const outputPath = join(generatedDir, 'frontmatter.d.ts');
-      log(`Writing type definitions to: ${outputPath}`);
-      await writeFile(outputPath, typeDefinitions, 'utf-8').catch((error: TypeGenerationError) => {
-        console.error('Error writing type definitions:', error);
-        throw error;
-      });
-
-      log('Successfully generated type definitions at:', outputPath);
-    } catch (error) {
-      console.error('Error in type generation:', error instanceof Error ? {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      } : error);
-      throw error;
+    if (validFiles.length === 0) {
+      throw new Error('No valid MDX files found with proper frontmatter');
     }
+
+    log(`Successfully parsed ${validFiles.length} valid MDX files`);
+
+    const typeDefinitions = await generateTypeDefinitions(validFiles);
+    log('Generated type definitions');
+
+    const outputDir = resolve(__dirname, '..', 'packages/mdx-types/src/generated');
+    await fsPromises.mkdir(outputDir, { recursive: true });
+
+    const outputFile = join(outputDir, 'frontmatter.d.ts');
+    await fsPromises.writeFile(outputFile, typeDefinitions, 'utf-8');
+
+    log(`Type definitions written to ${outputFile}`);
   } catch (error) {
     console.error('Error in main function:', error instanceof Error ? {
       name: error.name,
