@@ -4,7 +4,7 @@ You can build an API using MDX and web standards with the WHATWG Fetch API.
 
 ```mdx
 ---
-@type: https://mdx.org.ai/API
+$type: https://mdx.org.ai/API
 ---
 
 export const fetch = request => Response.json({ hello: 'world' })
@@ -15,8 +15,8 @@ You can also export HTTP methods like `GET`, `POST`, `PUT`, `DELETE`, etc.
 
 ```mdx
 ---
-@id: 'https://api.example.com'
-@type: 'https://mdx.org.ai/API'
+$id: 'https://api.example.com'
+$type: 'https://mdx.org.ai/API'
 ---
 
 export const POST = async request => {
