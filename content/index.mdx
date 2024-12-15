@@ -1,10 +1,17 @@
+---
+$type: https://mdx.org.ai/WebPage
+title: Why MDX?
+description: A comprehensive guide to MDX features including Markdown, YAML frontmatter, JSON-LD, and JSX/React components
+$context: https://schema.org
+---
+
 import { Cards } from 'nextra/components'
 import { SiMarkdown, SiYaml, SiJson, SiJavascript, SiReact } from 'react-icons/si'
 import { HiOutlineSparkles } from 'react-icons/hi2'
 
 # Why MDX?
 
-MDX brings together unstructured content via Markdown, typed schemas via JSON-LD, structured data via YAML frontmatter, 
+MDX brings together unstructured content via Markdown, typed schemas via JSON-LD, structured data via YAML frontmatter,
 executable code via Javascript/Typescript, and UI components via JSX/React.
 
 <Cards num={5}>
@@ -33,10 +40,11 @@ JSON-LD is a lightweight linked data format that allows you to describe your dat
 
 ```markdown
 ---
-@id: https://example.com
-@context: https://schema.org
-@type: WebPage
+$id: https://example.com
+$context: https://schema.org
+$type: WebPage
 title: Example Domain
+description: This domain is for use in illustrative examples in documents
 ---
 
 # Example Domain
@@ -48,15 +56,16 @@ domain in literature without prior coordination or asking for permission.
 
 ```
 
-While the most @context for JSON-LD is [schema.org](https://schema.org), you can use any @context that you want, and [mdx.org.ai](https://mdx.org.ai) 
-was created to extend [schema.org](https://schema.org) to provide a @context for MDX file types.  For example:
+While the most common $context for JSON-LD is [schema.org](https://schema.org), you can use any $context that you want, and [mdx.org.ai](https://mdx.org.ai)
+was created to extend [schema.org](https://schema.org) to provide a $context for MDX file types. For example:
 
 ```markdown
 ---
-@id: https://
-@context: https://mdx.org.ai
-@type: WebPage
+$id: https://example.com
+$context: https://mdx.org.ai
+$type: WebPage
 title: Example Domain
+description: Example domain demonstrating MDX.org.ai context usage
 ---
 ```
 
@@ -66,8 +75,9 @@ YAML is a human-friendly data serialization language that is fully compatible wi
 
 ```markdown
 ---
-@type: https://mdx.org.ai/SlideDeck
-title: Example Domain
+$type: https://mdx.org.ai/SlideDeck
+title: Example Slide Deck
+description: A sample slide deck demonstrating MDX capabilities
 ---
 ```
 
