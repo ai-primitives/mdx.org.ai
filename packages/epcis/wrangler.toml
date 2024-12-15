@@ -12,7 +12,12 @@ cpu_ms = 50
 uploader_size_mb = 100
 
 # Rate limiting configuration
-[[rate_limits]]
+[[services]]
+binding = "epcis_api"
+service = "rate_limiter"
+environment = "production"
+
+[services.config]
 namespace_id = "epcis_api"
 period = 60
 limit = 1000
