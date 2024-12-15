@@ -20,30 +20,104 @@ export type HonoEnv = {
   Variables: Variables;
 } & HonoBaseEnv;
 
+export interface EPCISDocument {
+  '@context': string[] | string;
+  type: 'EPCISDocument';
+  schemaVersion: string;
+  creationDate: string;
+  epcisBody: {
+    eventList: EPCISEvent[];
+  };
+}
+
+export interface EPCISQueryDocument {
+  '@context': string[] | string;
+  type: 'EPCISQueryDocument';
+  schemaVersion: string;
+  creationDate: string;
+  epcisBody: {
+    queryName?: string;
+    subscriptionID?: string;
+    queryResults: EPCISEvent[];
+  };
+}
+
+export interface QueryDefinition {
+  name: string;
+  query: {
+    eventTypes?: string[];
+    GE_eventTime?: string;
+    LT_eventTime?: string;
+    GE_recordTime?: string;
+    LT_recordTime?: string;
+    EQ_action?: string[];
+    EQ_bizStep?: string[];
+    EQ_disposition?: string[];
+    EQ_readPoint?: string[];
+    EQ_bizLocation?: string[];
+    MATCH_epc?: string[];
+    MATCH_epcClass?: string[];
+    orderBy?: 'eventTime' | 'recordTime';
+    orderDirection?: 'ASC' | 'DESC';
+    eventCountLimit?: number;
+    maxEventCount?: number;
+  };
+}
+
+export interface CaptureJob {
+  captureID: string;
+  createdAt: string;
+  finishedAt?: string;
+  running: boolean;
+  success: boolean;
+  captureErrorBehaviour: 'rollback' | 'proceed';
+  errors?: Array<{
+    type: string;
+    title: string;
+    status: number;
+    detail?: string;
+  }>;
+}
+
 export interface EPCISEvent extends Record<string, unknown> {
   eventID: string;
-  eventType: 'ObjectEvent' | 'AggregationEvent' | 'TransactionEvent' | 'TransformationEvent';
-  eventTime: string;
-  recordTime: string;
-  eventTimezone?: string;
-  businessStep?: string;
+  type: 'ObjectEvent' | 'AggregationEvent' | 'TransactionEvent' | 'TransformationEvent' | 'AssociationEvent';
+  action: 'ADD' | 'OBSERVE' | 'DELETE';
+  bizStep?: string;
   disposition?: string;
-  readPoint?: string;
-  businessLocation?: string;
+  eventTime: string;
+  eventTimeZoneOffset: string;
+  readPoint?: { id: string };
+  businessLocation?: { id: string };
   epcList?: string[];
-  action?: 'ADD' | 'OBSERVE' | 'DELETE';
-  tenantId: string;
+  quantityList?: Array<{
+    epcClass: string;
+    quantity: number;
+    uom?: string;
+  }>;
+  captureID?: string;  // Added for rollback support
+  recordTime?: string; // Added for event tracking
 }
 
 export interface QueryParams {
-  eventId?: string;
-  startTime?: Date;
-  endTime?: Date;
-  eventType?: string;
-  businessStep?: string;
-  disposition?: string;
-  limit?: number;
-  offset?: number;
+  eventTypes?: string[];
+  GE_eventTime?: string;
+  LT_eventTime?: string;
+  GE_recordTime?: string;
+  LT_recordTime?: string;
+  EQ_action?: string[];
+  EQ_bizStep?: string[];
+  EQ_disposition?: string[];
+  EQ_readPoint?: string[];
+  EQ_bizLocation?: string[];
+  MATCH_epc?: string[];
+  MATCH_epcClass?: string[];
+  orderBy?: 'eventTime' | 'recordTime';
+  orderDirection?: 'ASC' | 'DESC';
+  eventCountLimit?: number;
+  maxEventCount?: number;
+  perPage?: number;
+  nextPageToken?: string;
 }
 
 export interface ClickhouseQuery {
