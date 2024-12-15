@@ -7,11 +7,16 @@
     "allowJs": true,
     "strict": true,
     "skipLibCheck": true,
-    "outDir": "dist",
-    "noEmit": true,
     "resolveJsonModule": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
-  "include": ["./**/*.ts"],
+  "include": [
+    "scripts/**/*.ts",
+    "packages/**/*.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

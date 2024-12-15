@@ -146,18 +146,6 @@ function isValidParseResult(result: MDXParseResult | null): result is ValidMDXPa
   );
 }
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('[Fatal Error] Unhandled Promise Rejection:', {
-    reason: reason instanceof Error ? {
-      name: reason.name,
-      message: reason.message,
-      stack: reason.stack
-    } : reason,
-    promise
-  });
-  process.exit(1);
-});
-
 const main = async () => {
   try {
     console.log('=== Starting MDX Type Generation ===');
@@ -462,17 +450,19 @@ const main = async () => {
   }
 };
 
-// Execute main with proper error handling
-main().catch(error => {
-  console.error('[Fatal Error] Top-level error:', {
-    error: error instanceof Error ? {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    } : error,
-    type: error instanceof Error ? error.constructor.name : typeof error
-  });
-  process.exit(1);
-}).finally(() => {
-  console.log('[Debug] Main execution completed');
-});
+// Wrap execution in IIFE for better error handling
+(async () => {
+  try {
+    await main();
+  } catch (error) {
+    console.error('[Fatal Error] Error in async IIFE:', {
+      error: error instanceof Error ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      } : error,
+      type: error instanceof Error ? error.constructor.name : typeof error
+    });
+    process.exit(1);
+  }
+})();
