@@ -11,6 +11,8 @@ export interface MDXMetadata {
   type: string;
   id?: string;
   context?: string;
+  title: string;
+  description: string;
   [key: string]: any;
 }
 
@@ -23,12 +25,20 @@ interface MDXParseResult {
 function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata {
   const type = frontmatter['$type'] || frontmatter['@type'] || '';
   const id = frontmatter['$id'] || frontmatter['@id'] || undefined;
-  const context = frontmatter['@context'] || 'https://mdx.org.ai';
+  const context = frontmatter['$context'] || frontmatter['@context'] || 'https://mdx.org.ai';
+  const title = frontmatter['title'];
+  const description = frontmatter['description'];
 
-  const { $type, '@type': atType, $id, '@id': atId, '@context': atContext, ...rest } = frontmatter;
+  if (!type) throw new Error('$type is required in frontmatter');
+  if (!title) throw new Error('title is required in frontmatter');
+  if (!description) throw new Error('description is required in frontmatter');
+
+  const { $type, '@type': atType, $id, '@id': atId, '$context': dollarContext, '@context': atContext, ...rest } = frontmatter;
 
   return {
     type,
+    title,
+    description,
     ...(id && { id }),
     context,
     ...rest

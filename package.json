@@ -7,7 +7,7 @@
     "dev": "next --turbopack",
     "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind",
     "start": "next start",
-    "generate-types": "ts-node scripts/generate-types.js",
+    "generate-types": "NODE_OPTIONS='--loader ts-node/esm' ts-node --esm scripts/generate-types.ts",
     "prebuild": "pnpm generate-types"
   },
   "dependencies": {
