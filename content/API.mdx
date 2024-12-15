@@ -30,7 +30,7 @@ You can export specific HTTP method handlers:
 
 ```mdx
 ---
-"@type": https://mdx.org.ai/API
+$type: https://mdx.org.ai/API
 ---
 
 export const fetch = request => Response.json({ hello: 'world' })
@@ -40,8 +40,8 @@ export const fetch = request => Response.json({ hello: 'world' })
 
 ```mdx
 ---
-"@id": 'https://api.example.com'
-"@type": 'https://mdx.org.ai/API'
+$id: 'https://api.example.com'
+$type: 'https://mdx.org.ai/API'
 ---
 
 export const POST = async request => {
