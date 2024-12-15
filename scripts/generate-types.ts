@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
 process.on('unhandledRejection', (error: unknown) => {
-  console.error('UnhandledPromiseRejection:', error);
+  console.error('UnhandledPromiseRejection:', {
+    message: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : 'No stack trace available',
+    details: JSON.stringify(error, null, 2)
+  });
   process.exit(1);
 });
 
@@ -15,16 +19,23 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 function generateTypeDefinitions(metadataList: MDXMetadata[]): string {
-  const uniqueTypes = new Set(metadataList.map(m => m.$type).filter(Boolean));
+  // Normalize type names by removing URL prefixes
+  const normalizeType = (type: string) => type.replace(/^https:\/\/mdx\.org\.ai\//, '');
+
+  const uniqueTypes = new Set(
+    metadataList
+      .map(m => normalizeType(m.$type))
+      .filter(Boolean)
+  );
 
   const interfaces = Array.from(uniqueTypes).map(type => {
-    const typeMetadata = metadataList.find(m => m.$type === type);
+    const typeMetadata = metadataList.find(m => normalizeType(m.$type) === type);
     if (!typeMetadata) return '';
 
     const propertyDefinitions = Object.entries(typeMetadata)
       .filter(([key]) => !key.startsWith('_'))
       .map(([key, value]) => {
-        const isOptional = metadataList.some(m => m.$type === type && !(key in m));
+        const isOptional = metadataList.some(m => normalizeType(m.$type) === type && !(key in m));
         const typeStr = typeof value === 'string' ? 'string'
           : typeof value === 'number' ? 'number'
           : typeof value === 'boolean' ? 'boolean'
@@ -102,9 +113,6 @@ async function main() {
         console.log(`Parsing ${filePath}...`);
         const result = await parseMDXFile(filePath);
         console.log(`Successfully parsed ${filePath}`);
-        if (!result.metadata.$type || !result.metadata.title || !result.metadata.description) {
-          console.warn(`Warning: File ${filePath} is missing required frontmatter fields ($type, title, description)`);
-        }
         return result;
       } catch (error) {
         console.error(`Error parsing file ${filePath}:`, error);
@@ -122,43 +130,36 @@ async function main() {
 
     console.log('\nGenerating type definitions...');
     const generatedDir = join(__dirname, '../packages/mdx-types/src/generated');
+
+    // Ensure the generated directory exists
     if (!existsSync(generatedDir)) {
       console.log(`Creating generated types directory: ${generatedDir}`);
       mkdirSync(generatedDir, { recursive: true });
     }
 
-    const typeDefinitions = generateTypeDefinitions(parsedFiles.map((f: MDXParseResult) => f.metadata));
+    const typeDefinitions = generateTypeDefinitions(parsedFiles.map(f => f.metadata));
     const typesPath = join(generatedDir, 'types.ts');
+
     console.log(`\nWriting generated types to ${typesPath}`);
     await fs.writeFile(typesPath, typeDefinitions);
 
     console.log(`\nSuccessfully generated types from ${parsedFiles.length} MDX files`);
     console.log('Generated types directory:', generatedDir);
   } catch (error: unknown) {
-    const errorObj = error as Error;
     console.error('\nError generating types:', {
-      message: errorObj?.message || 'Unknown error occurred',
-      stack: errorObj?.stack || 'No stack trace available',
-      details: error instanceof Error
-        ? JSON.stringify(error, Object.getOwnPropertyNames(error))
-        : JSON.stringify(error)
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : 'No stack trace available',
+      details: JSON.stringify(error, null, 2)
     });
     process.exit(1);
   }
 }
 
-(async () => {
-  try {
-    await main();
-  } catch (error: unknown) {
-    const errorObj = error as Error;
-    console.error('Fatal error:', {
-      message: errorObj?.message || 'Unknown error occurred',
-      stack: errorObj?.stack || 'No stack trace available',
-      details: error instanceof Error
-        ? JSON.stringify(error, Object.getOwnPropertyNames(error))
-        : JSON.stringify(error)
-    });
-    process.exit(1);
-  }
-})();
+main().catch((error: unknown) => {
+  console.error('Fatal error:', {
+    message: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : 'No stack trace available',
+    details: JSON.stringify(error, null, 2)
+  });
+  process.exit(1);
+});
