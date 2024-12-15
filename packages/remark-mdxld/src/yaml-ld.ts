@@ -2,12 +2,14 @@ import { parse } from 'yaml'
 
 export interface YamlLdData {
   [key: string]: any
-  frontmatter?: Record<string, any>
+  frontmatter: Record<string, any>
 }
 
 export function parseYamlLd(content: string, preferDollarPrefix: boolean = true): YamlLdData {
   const data = parse(content)
-  const ldProperties: YamlLdData = {}
+  const ldProperties: YamlLdData = {
+    frontmatter: {}
+  }
   const regularProperties: Record<string, any> = {}
 
   for (const [key, value] of Object.entries(data)) {
@@ -38,8 +40,6 @@ export function parseYamlLd(content: string, preferDollarPrefix: boolean = true)
     throw new Error(`Missing required frontmatter fields: ${missing.join(', ')}`)
   }
 
-  return {
-    ...ldProperties,
-    frontmatter: regularProperties
-  }
+  ldProperties.frontmatter = regularProperties
+  return ldProperties
 }
