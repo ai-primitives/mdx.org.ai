@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+
+// Add unhandledRejection handler at the top level
+process.on('unhandledRejection', (error: unknown) => {
+  console.error('UnhandledPromiseRejection:', error);
+  process.exit(1);
+});
+
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { globSync } from 'glob';
@@ -90,6 +97,7 @@ export type MDXType = ${interfaces.length > 0
 // Execute type generation for the main project
 async function main() {
   try {
+    console.log('Starting type generation process...');
     const contentDirs = [
       join(__dirname, '../packages/mdx-types/content/types'),
       join(__dirname, '../content'),
@@ -99,9 +107,11 @@ async function main() {
     console.log('Searching for MDX files in directories:');
     contentDirs.forEach(dir => console.log(`- ${dir}`));
 
+    console.log('\nCollecting MDX files...');
     const mdxFiles = await Promise.all(contentDirs.map(async (dir) => {
       if (existsSync(dir)) {
         try {
+          console.log(`Searching directory: ${dir}`);
           const dirFiles = globSync(join(dir, '*.mdx'));
           console.log(`Found ${dirFiles.length} MDX files in ${dir}`);
           return dirFiles;
@@ -112,18 +122,22 @@ async function main() {
       }
       console.warn(`Directory not found: ${dir}`);
       return [];
-    })).then(files => files.flat());
+    })).then(files => {
+      const flatFiles = files.flat();
+      console.log(`Total MDX files found: ${flatFiles.length}`);
+      return flatFiles;
+    });
 
     if (mdxFiles.length === 0) {
       throw new Error('No MDX files found in any content directories');
     }
 
-    console.log(`\nProcessing ${mdxFiles.length} MDX files...`);
-
+    console.log('\nProcessing MDX files...');
     const parsedFiles = await Promise.all(mdxFiles.map(async (file) => {
       try {
         console.log(`Parsing ${file}...`);
         const result = await parseMDXFile(file);
+        console.log(`Successfully parsed ${file}`);
         if (!result.metadata.$type || !result.metadata.title || !result.metadata.description) {
           console.warn(`Warning: File ${file} is missing required frontmatter fields ($type, title, description)`);
         }
@@ -132,12 +146,17 @@ async function main() {
         console.error(`Error parsing file ${file}:`, error);
         return null;
       }
-    })).then(files => files.filter((file): file is NonNullable<typeof file> => file !== null));
+    })).then(files => {
+      const validFiles = files.filter((file): file is NonNullable<typeof file> => file !== null);
+      console.log(`Successfully parsed ${validFiles.length} out of ${files.length} files`);
+      return validFiles;
+    });
 
     if (parsedFiles.length === 0) {
       throw new Error('No valid MDX files could be parsed');
     }
 
+    console.log('\nGenerating type definitions...');
     const generatedDir = join(__dirname, '../packages/mdx-types/src/generated');
     if (!existsSync(generatedDir)) {
       console.log(`Creating generated types directory: ${generatedDir}`);
@@ -164,14 +183,19 @@ async function main() {
   }
 }
 
-// Only run if this is the main module
-if (import.meta.url === fileURLToPath(import.meta.url)) {
-  main().catch(error => {
-    console.error('Failed to generate types:', {
-      message: error.message,
-      stack: error.stack,
-      details: JSON.stringify(error, null, 2)
+// Run the main function with proper error handling
+(async () => {
+  try {
+    await main();
+  } catch (error: unknown) {
+    const errorObj = error as Error;
+    console.error('Fatal error:', {
+      message: errorObj?.message || 'Unknown error occurred',
+      stack: errorObj?.stack || 'No stack trace available',
+      details: error instanceof Error
+        ? JSON.stringify(error, Object.getOwnPropertyNames(error))
+        : JSON.stringify(error)
     });
     process.exit(1);
-  });
-}
+  }
+})();
