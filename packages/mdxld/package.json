@@ -1,0 +1,36 @@
+{
+  "name": "mdxld",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "unified": "^11.0.4",
+    "remark-parse": "^11.0.0",
+    "remark-mdx": "^3.0.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-stringify": "^11.0.0",
+    "yaml": "^2.3.4",
+    "remark-mdxld": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0",
+    "@types/node": "^20.10.5",
+    "@types/mdast": "^4.0.0",
+    "@types/unist": "^3.0.0",
+    "@vitest/coverage-v8": "^1.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

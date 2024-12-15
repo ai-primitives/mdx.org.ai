@@ -19,14 +19,28 @@
 export interface MDXLD {
   id?: string
   type?: string
-  context?: string | Record<string, unknown>
+  context?: {
+    base?: string
+    vocab?: string
+    language?: string
+    [key: string]: unknown
+  }
   language?: string
   base?: string
   vocab?: string
   list?: unknown[]
   set?: Set<unknown>
   reverse?: boolean
-  data: Record<string, unknown>
+  data: {
+    [key: string]: unknown | {
+      type?: string
+      id?: string
+      context?: Record<string, unknown>
+      list?: unknown[]
+      set?: Set<unknown>
+      [key: string]: unknown
+    }
+  }
   content: string
 }
 
