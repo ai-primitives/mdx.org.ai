@@ -30,8 +30,20 @@ import { mdxld } from 'mdxld'
 const mdx = `---
 $type: BlogPost
 $id: https://example.com/post
+$language: en
+$base: https://example.com/
+$vocab: https://schema.org/
 title: My First Post
 tags: ['mdx', 'yaml-ld']
+authors: {
+  $list: [
+    'https://example.com/authors/1',
+    'https://example.com/authors/2'
+  ]
+}
+categories: {
+  $set: ['tech', 'documentation']
+}
 ---
 
 # My First Post
@@ -62,11 +74,28 @@ type MDXLD = {
   context?: string
   type?: string
   graph?: any
+  language?: string    // Specifies the primary language of the content
+  list?: any[]        // Represents an ordered collection of items
+  set?: Set<any>      // Represents a unique, unordered collection
+  reverse?: boolean   // Indicates whether relationships should be reversed
+  base?: string       // Base IRI for resolving relative IRIs
+  vocab?: string      // Default vocabulary IRI for property terms
   data: Record<string, any>
   content: string
-  [key: string]: any // For additional YAML-LD properties
+  [key: string]: any  // For additional YAML-LD properties
 }
 ```
+
+### YAML-LD Properties
+
+The mdxld package supports several YAML-LD properties that can be used in frontmatter:
+
+- `$language`: Specifies the primary language of the content (e.g., 'en', 'es')
+- `$list`: Represents an ordered collection of items that maintains sequence
+- `$set`: Represents a unique, unordered collection of items
+- `$reverse`: Indicates whether relationships should be processed in reverse
+- `$base`: Defines the base IRI for resolving relative IRIs in the document
+- `$vocab`: Specifies the default vocabulary IRI for property terms
 
 For example, a $type could be:
 

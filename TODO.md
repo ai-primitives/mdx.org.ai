@@ -17,6 +17,13 @@
   - [ ] Extract prefixed properties to root object
   - [ ] Maintain backward compatibility with standard YAML frontmatter
   - [ ] Handle nested YAML-LD structures
+  - [ ] Implement special YAML-LD properties:
+    - [ ] $language - Language tag support
+    - [ ] $list - Ordered collection handling
+    - [ ] $set - Unique collection handling
+    - [ ] $reverse - Reverse relationship processing
+    - [ ] $base - Base IRI resolution
+    - [ ] $vocab - Vocabulary IRI handling
 
 ## TypeScript Types
 - [ ] Implement core MDXLD type interface
