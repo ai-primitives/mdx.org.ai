@@ -30,6 +30,7 @@ import {
 } from '../packages/mdx-types/src/utils/mdx-parser.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { promises as fsPromises } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -132,12 +133,14 @@ async function main() {
     ].map(dir => {
       const fullPath = join(__dirname, '..', dir);
       log(`Checking directory: ${fullPath}`);
-      if (!existsSync(fullPath)) {
-        log(`Warning: Directory ${fullPath} does not exist`);
+      try {
+        const exists = existsSync(fullPath);
+        log(`Directory ${fullPath} exists: ${exists}`);
+        return exists ? fullPath : null;
+      } catch (error) {
+        console.error(`Error checking directory ${fullPath}:`, error);
         return null;
       }
-      log(`Directory exists: ${fullPath}`);
-      return fullPath;
     }).filter(Boolean) as string[];
 
     if (contentDirs.length === 0) {
@@ -153,7 +156,17 @@ async function main() {
         log(`Using glob pattern: ${pattern}`);
         const files = await glob(pattern);
         log(`Found ${files.length} files in ${dir}:`, files);
-        return files;
+        const validFiles = await Promise.all(files.map(async (file) => {
+          try {
+            await fsPromises.access(file, fsPromises.constants.R_OK);
+            log(`File ${file} is readable`);
+            return file;
+          } catch (error) {
+            console.error(`Error accessing file ${file}:`, error);
+            return null;
+          }
+        }));
+        return validFiles.filter(Boolean);
       } catch (error) {
         console.error(`Error searching for MDX files in ${dir}:`, error);
         return [];
@@ -174,7 +187,10 @@ async function main() {
 
     log('Processing files:', allMdxFiles);
 
-    const parsePromises = allMdxFiles.map(async (filePath: string) => {
+    const parsePromises = allMdxFiles.map(async (filePath) => {
+      if (!filePath) {
+        return null;
+      }
       try {
         log(`Parsing ${filePath}...`);
         const result = await parseMDXFile(filePath, true);
