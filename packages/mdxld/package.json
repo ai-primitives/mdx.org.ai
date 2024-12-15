@@ -1,6 +1,5 @@
 {
   "name": "mdxld",
-  "version": "0.1.0",
   "description": "ESM-native library for parsing and serializing MDX with YAML-LD frontmatter",
   "type": "module",
   "main": "dist/index.js",
@@ -13,6 +12,7 @@
     "build": "tsc",
     "test": "vitest",
     "docs": "typedoc",
+    "release": "semantic-release",
     "prepublishOnly": "pnpm run build && pnpm run test && pnpm run docs"
   },
   "keywords": [
@@ -34,5 +34,9 @@
     "typedoc": "^0.25.7",
     "typescript": "^5.7.2",
     "vitest": "^1.0.4"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }
