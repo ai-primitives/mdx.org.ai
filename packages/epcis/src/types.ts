@@ -2,15 +2,12 @@ import { DataFormat } from '@clickhouse/client';
 import { ClickhouseClient } from './clickhouse';
 import type { Env as HonoBaseEnv } from 'hono/types';
 
-interface RateLimitResult {
-  success: boolean;
-  limit: number;
-  remaining: number;
-  reset: number;
-}
-
-export interface RateLimiter {
-  limit(key: string): Promise<RateLimitResult>;
+interface RateLimiter {
+  limit(key: string): Promise<{
+    success: boolean;
+    limit: number;
+    reset: number;
+  }>;
 }
 
 export interface Env extends Record<string, unknown> {
@@ -19,9 +16,7 @@ export interface Env extends Record<string, unknown> {
   CLICKHOUSE_URL: string;
   CLICKHOUSE_USER: string;
   CLICKHOUSE_PASSWORD: string;
-  epcis_capture: RateLimiter;
-  epcis_query: RateLimiter;
-  epcis_subscription: RateLimiter;
+  epcis_api: RateLimiter;
 }
 
 export interface Variables {

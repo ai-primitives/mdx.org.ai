@@ -2,34 +2,20 @@ import { MiddlewareHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { HonoEnv } from '../types';
 
-const NAMESPACE_MAP = {
-  '/capture': 'epcis_capture',
-  '/query': 'epcis_query',
-  '/subscription': 'epcis_subscription'
-} as const;
-
 export const rateLimitMiddleware: MiddlewareHandler<HonoEnv> = async (c, next) => {
   const path = new URL(c.req.url).pathname;
-  const namespace = Object.entries(NAMESPACE_MAP).find(([prefix]) => path.startsWith(prefix))?.[1];
+  const rateLimiter = c.env.epcis_api;
 
-  if (!namespace) {
-    return next();
-  }
-
-  const rateLimiter = c.env[namespace];
-  if (!rateLimiter) {
-    console.warn(`Rate limiter not found for namespace: ${namespace}`);
+  if (!rateLimiter || typeof rateLimiter.limit !== 'function') {
+    console.warn('Rate limiter not configured, proceeding without rate limiting');
     return next();
   }
 
   try {
-    const { success, limit, remaining, reset } = await rateLimiter.limit(
-      `${c.req.method}:${path}`
-    );
+    const { success, limit, reset } = await rateLimiter.limit(`${c.req.method}:${path}`);
 
     // Set rate limit headers
     c.header('RateLimit-Limit', limit.toString());
-    c.header('RateLimit-Remaining', remaining.toString());
     c.header('RateLimit-Reset', reset.toString());
 
     if (!success) {
@@ -47,6 +33,10 @@ export const rateLimitMiddleware: MiddlewareHandler<HonoEnv> = async (c, next) =
     return next();
   } catch (error) {
     console.error('Rate limiting error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      // In development, log the error but allow the request
+      return next();
+    }
     return c.json(
       {
         type: 'epcisException:ImplementationException',

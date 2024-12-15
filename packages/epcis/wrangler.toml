@@ -13,19 +13,9 @@ uploader_size_mb = 100
 
 # Rate limiting configuration
 [[rate_limits]]
-namespace_id = "epcis_capture"
+namespace_id = "epcis_api"
 period = 60
 limit = 1000
-
-[[rate_limits]]
-namespace_id = "epcis_query"
-period = 60
-limit = 2000
-
-[[rate_limits]]
-namespace_id = "epcis_subscription"
-period = 60
-limit = 500
 
 [[kv_namespaces]]
 binding = "EPCIS_KV"
