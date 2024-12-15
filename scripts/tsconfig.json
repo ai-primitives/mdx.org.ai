@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
+    "target": "ES2022",
+    "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "allowJs": true,
@@ -9,12 +9,12 @@
     "skipLibCheck": true,
     "outDir": "dist",
     "noEmit": true,
-    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
+    "baseUrl": "..",
     "paths": {
-      "*": ["../node_modules/*"]
+      "@/*": ["packages/*"]
     }
   },
-  "include": ["./**/*.ts", "./**/*.js"],
-  "exclude": ["node_modules"]
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

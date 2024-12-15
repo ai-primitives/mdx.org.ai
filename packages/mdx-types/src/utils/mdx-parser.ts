@@ -23,24 +23,43 @@ export interface MDXParseResult {
 }
 
 function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata {
-  const {
-    $type, '@type': atType,
-    $id, '@id': atId,
-    $context: dollarContext,
-    '@context': atContext,
-    title,
-    description,
-    ...rest
-  } = frontmatter;
+  try {
+    const {
+      $type, '@type': atType,
+      $id, '@id': atId,
+      $context: dollarContext,
+      '@context': atContext,
+      title,
+      description,
+      ...rest
+    } = frontmatter;
 
-  return {
-    $type: $type || atType || '',
-    title: title || '',
-    description: description || '',
-    $id: $id || atId,
-    $context: dollarContext || atContext,
-    ...rest
-  };
+    const normalizedType = ($type || atType || '').replace(/^https:\/\/mdx\.org\.ai\//, '');
+
+    if (!normalizedType) {
+      throw new Error('Missing required field: $type or @type');
+    }
+
+    if (!title) {
+      throw new Error('Missing required field: title');
+    }
+
+    if (!description) {
+      throw new Error('Missing required field: description');
+    }
+
+    return {
+      $type: normalizedType,
+      title,
+      description,
+      $id: $id || atId,
+      $context: dollarContext || atContext,
+      ...rest
+    };
+  } catch (error) {
+    console.error('Error normalizing frontmatter:', error);
+    throw error;
+  }
 }
 
 export async function parseMDXFile(filePath: string): Promise<MDXParseResult> {

@@ -12,14 +12,14 @@ process.on('unhandledRejection', (error: unknown) => {
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { globSync } from 'glob';
-import { parseMDXFile, type MDXParseResult, type MDXMetadata } from '../packages/mdx-types/src/utils/mdx-parser.js';
+import { parseMDXFile } from '@/mdx-types/src/utils/mdx-parser.js';
+import type { MDXParseResult, MDXMetadata } from '@/mdx-types/src/utils/mdx-parser.js';
 import { promises as fs, existsSync, mkdirSync } from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 function generateTypeDefinitions(metadataList: MDXMetadata[]): string {
-  // Normalize type names by removing URL prefixes
   const normalizeType = (type: string) => type.replace(/^https:\/\/mdx\.org\.ai\//, '');
 
   const uniqueTypes = new Set(
@@ -131,7 +131,6 @@ async function main() {
     console.log('\nGenerating type definitions...');
     const generatedDir = join(__dirname, '../packages/mdx-types/src/generated');
 
-    // Ensure the generated directory exists
     if (!existsSync(generatedDir)) {
       console.log(`Creating generated types directory: ${generatedDir}`);
       mkdirSync(generatedDir, { recursive: true });
