@@ -2,7 +2,7 @@ import { unified } from 'unified'
 import remarkParse from 'remark-parse'
 import remarkFrontmatter from 'remark-frontmatter'
 import { parse as parseYaml } from 'yaml'
-import { readFileSync } from 'fs'
+import { promises as fs } from 'fs'
 import { join } from 'path'
 import { Root, Code, Yaml } from 'mdast'
 import { Node } from 'unist'
@@ -68,9 +68,9 @@ function extractExamples(tree: Root): string[] {
   return examples;
 }
 
-export function parseMDXFile(filePath: string): MDXParseResult {
+export async function parseMDXFile(filePath: string): Promise<MDXParseResult> {
   try {
-    const content = readFileSync(filePath, 'utf-8');
+    const content = await fs.readFile(filePath, 'utf-8');
 
     const processor = unified()
       .use(remarkParse)
@@ -88,7 +88,7 @@ export function parseMDXFile(filePath: string): MDXParseResult {
           throw new Error('Frontmatter must be a valid YAML object');
         }
       } catch (e) {
-        throw new Error(`Failed to parse frontmatter in ${filePath}: ${e}`);
+        throw new Error(`Failed to parse frontmatter in ${filePath}: ${(e as Error).message}`);
       }
     }
 
@@ -104,6 +104,6 @@ export function parseMDXFile(filePath: string): MDXParseResult {
       examples
     };
   } catch (e) {
-    throw new Error(`Failed to parse MDX file ${filePath}: ${e}`);
+    throw new Error(`Failed to parse MDX file ${filePath}: ${(e as Error).message}`);
   }
 }

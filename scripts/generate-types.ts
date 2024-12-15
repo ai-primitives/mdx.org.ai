@@ -150,8 +150,15 @@ async function main() {
 
     console.log(`\nSuccessfully generated types from ${parsedFiles.length} MDX files`);
     console.log('Generated types directory:', generatedDir);
-  } catch (error) {
-    console.error('\nError generating types:', error);
+  } catch (error: unknown) {
+    const errorObj = error as Error;
+    console.error('\nError generating types:', {
+      message: errorObj?.message || 'Unknown error occurred',
+      stack: errorObj?.stack || 'No stack trace available',
+      details: error instanceof Error
+        ? JSON.stringify(error, Object.getOwnPropertyNames(error))
+        : JSON.stringify(error)
+    });
     process.exit(1);
   }
 }
