@@ -1,12 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { createProcessor } from '../src'
-import remarkMdxld from '../src'
 import { parseYamlLd } from '../src/yaml-ld'
 
 describe('remark-mdxld', () => {
   describe('MDX Features', () => {
     it('should parse MDX with JSX components', async () => {
-      const processor = createProcessor().use(remarkMdxld)
+      const processor = createProcessor()
       const result = await processor.process(`---
 title: Test Document
 description: Test description
@@ -24,7 +23,7 @@ import { Button } from './components'
     })
 
     it('should handle MDX exports', async () => {
-      const processor = createProcessor().use(remarkMdxld)
+      const processor = createProcessor()
       const result = await processor.process(`---
 title: Test Document
 description: Test description
@@ -43,7 +42,7 @@ export const meta = {
 
   describe('GFM Features', () => {
     it('should parse GFM tables and task lists', async () => {
-      const processor = createProcessor().use(remarkMdxld)
+      const processor = createProcessor()
       const result = await processor.process(`---
 title: Test Document
 description: Test description
@@ -64,7 +63,7 @@ $type: Document
     })
 
     it('should disable GFM features when gfm option is false', async () => {
-      const processor = createProcessor({ gfm: false }).use(remarkMdxld)
+      const processor = createProcessor({ gfm: false })
       const result = await processor.process(`---
 title: Test Document
 description: Test description
@@ -76,12 +75,15 @@ $type: Document
 `)
       const output = result.toString()
       expect(output).not.toContain('| Header 1 |')
+      expect(output).not.toContain('| Cell 1   |')
+      expect(output).toContain('Header 1 Header 2')
+      expect(output).toContain('Cell 1 Cell 2')
     })
   })
 
   describe('YAML-LD Parsing', () => {
     it('should parse YAML-LD frontmatter with $ prefix', async () => {
-      const processor = createProcessor().use(remarkMdxld)
+      const processor = createProcessor()
       const result = await processor.process(`---
 $type: https://mdx.org.ai/Document
 title: Test Document
@@ -100,8 +102,7 @@ description: A test document
     })
 
     it('should convert @ prefix to $ prefix when preferDollarPrefix is true', async () => {
-      const result = await createProcessor()
-        .use(remarkMdxld, { preferDollarPrefix: true })
+      const result = await createProcessor({ preferDollarPrefix: true })
         .process(`---
 "@type": https://mdx.org.ai/Document
 title: Test Document
@@ -120,7 +121,7 @@ description: A test document
     })
 
     it('should throw error when required fields are missing', async () => {
-      const processor = createProcessor().use(remarkMdxld)
+      const processor = createProcessor()
 
       await expect(processor.process(`---
 title: Test Document
@@ -163,7 +164,7 @@ title: Test
 
   describe('Plugin Integration', () => {
     it('should work as a single plugin without requiring individual remark plugins', async () => {
-      const processor = createProcessor().use(remarkMdxld)
+      const processor = createProcessor()
       const result = await processor.process(`---
 title: Test Document
 description: Test description

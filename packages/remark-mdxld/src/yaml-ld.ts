@@ -2,18 +2,26 @@ import { parse } from 'yaml'
 
 export interface YamlLdData {
   [key: string]: any
-  frontmatter: Record<string, any>
+  frontmatter: {
+    title: string
+    description: string
+    [key: string]: any
+  }
 }
 
 export function parseYamlLd(content: string, preferDollarPrefix: boolean = true): YamlLdData {
   const data = parse(content)
-  const ldProperties: YamlLdData = {
-    frontmatter: {}
+  const result: YamlLdData = {
+    frontmatter: {
+      title: '',
+      description: ''
+    }
   }
-  const regularProperties: Record<string, any> = {}
 
+  // Process all properties
   for (const [key, value] of Object.entries(data)) {
-    if (key.startsWith('$') || key.startsWith('@')) {
+    if (key.startsWith('@') || key.startsWith('$')) {
+      // Handle LD properties
       const normalizedKey = preferDollarPrefix
         ? key.startsWith('@')
           ? '$' + key.slice(1)
@@ -21,25 +29,28 @@ export function parseYamlLd(content: string, preferDollarPrefix: boolean = true)
         : key.startsWith('$')
         ? '@' + key.slice(1)
         : key
-      ldProperties[normalizedKey] = value
+      result[normalizedKey] = value
     } else {
-      regularProperties[key] = value
+      // Regular frontmatter properties
+      result.frontmatter[key] = value
     }
   }
 
   // Validate required fields
-  const hasType = '$type' in ldProperties || '@type' in ldProperties
-  const hasTitle = 'title' in regularProperties
-  const hasDescription = 'description' in regularProperties
+  const missing: string[] = []
+  if (!('$type' in result) && !('@type' in result)) {
+    missing.push('$type')
+  }
+  if (!result.frontmatter.title) {
+    missing.push('title')
+  }
+  if (!result.frontmatter.description) {
+    missing.push('description')
+  }
 
-  if (!hasType || !hasTitle || !hasDescription) {
-    const missing: string[] = []
-    if (!hasType) missing.push('$type')
-    if (!hasTitle) missing.push('title')
-    if (!hasDescription) missing.push('description')
+  if (missing.length > 0) {
     throw new Error(`Missing required frontmatter fields: ${missing.join(', ')}`)
   }
 
-  ldProperties.frontmatter = regularProperties
-  return ldProperties
+  return result
 }
