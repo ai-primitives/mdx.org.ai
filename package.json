@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "pnpm generate-types && next build",
-    "dev": "next --turbopack",
+    "dev": "next dev",
     "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind",
     "start": "next start",
     "generate-types": "ts-node scripts/generate-types.ts",
