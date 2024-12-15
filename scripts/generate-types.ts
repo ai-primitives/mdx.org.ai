@@ -5,8 +5,15 @@ const log = (...args: any[]) => debug && console.log(...args);
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise);
-  console.error('Reason:', JSON.stringify(reason, null, 2));
-  console.error('Full error object:', reason);
+  if (reason instanceof Error) {
+    console.error('Error:', {
+      name: reason.name,
+      message: reason.message,
+      stack: reason.stack
+    });
+  } else {
+    console.error('Non-Error reason:', reason);
+  }
   process.exit(1);
 });
 
@@ -101,6 +108,8 @@ function isValidParseResult(result: MDXParseResult | null): result is ValidMDXPa
 async function main() {
   try {
     log('Starting type generation...');
+    log('Current directory:', process.cwd());
+    log('Script directory:', __dirname);
 
     const contentDirs = [
       'examples',
@@ -109,10 +118,12 @@ async function main() {
       'packages/mdx-types/content/types'
     ].map(dir => {
       const fullPath = join(__dirname, '..', dir);
+      log(`Checking directory: ${fullPath}`);
       if (!existsSync(fullPath)) {
         log(`Warning: Directory ${fullPath} does not exist`);
         return null;
       }
+      log(`Directory exists: ${fullPath}`);
       return fullPath;
     }).filter(Boolean) as string[];
 
@@ -127,7 +138,9 @@ async function main() {
         log(`Searching for MDX files in ${dir}...`);
         const pattern = join(dir, '**/*.mdx');
         log(`Using glob pattern: ${pattern}`);
-        return await glob(pattern);
+        const files = await glob(pattern);
+        log(`Found ${files.length} files in ${dir}:`, files);
+        return files;
       } catch (error) {
         console.error(`Error searching for MDX files in ${dir}:`, error);
         return [];
@@ -146,13 +159,17 @@ async function main() {
       throw new Error('No MDX files found in any content directory');
     }
 
+    log('Processing files:', allMdxFiles);
+
     const parsePromises = allMdxFiles.map(async (filePath: string) => {
       try {
         log(`Parsing ${filePath}...`);
         const result = await parseMDXFile(filePath, true);
         if (!result) {
           console.warn(`Failed to parse ${filePath}`);
+          return null;
         }
+        log(`Successfully parsed ${filePath}`);
         return result;
       } catch (error) {
         console.error(`Error parsing ${filePath}:`, error);
@@ -181,15 +198,18 @@ async function main() {
         }
       }));
 
+      log('Generating type definitions for files:', validFiles);
       const typeDefinitions = await generateTypeDefinitions(validFiles);
 
       const generatedDir = join(__dirname, '../packages/mdx-types/src/generated');
+      log(`Creating generated directory: ${generatedDir}`);
       await mkdir(generatedDir, { recursive: true }).catch((error: TypeGenerationError) => {
         console.error('Error creating generated directory:', error);
         throw error;
       });
 
       const outputPath = join(generatedDir, 'frontmatter.d.ts');
+      log(`Writing type definitions to: ${outputPath}`);
       await writeFile(outputPath, typeDefinitions, 'utf-8').catch((error: TypeGenerationError) => {
         console.error('Error writing type definitions:', error);
         throw error;
