@@ -2,13 +2,14 @@
   "name": "site",
   "license": "MIT",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "pnpm generate-types && next build",
     "dev": "next --turbopack",
     "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind",
     "start": "next start",
-    "generate-types": "ts-node scripts/generate-types.ts",
-    "update-frontmatter": "ts-node scripts/update-frontmatter.ts"
+    "generate-types": "NODE_OPTIONS='--loader ts-node/esm' ts-node --esm scripts/generate-types.ts",
+    "update-frontmatter": "NODE_OPTIONS='--loader ts-node/esm' ts-node --esm scripts/update-frontmatter.ts"
   },
   "dependencies": {
     "@theguild/remark-mermaid": "^0.1.3",
