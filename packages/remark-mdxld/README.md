@@ -20,6 +20,8 @@ npm install remark-mdxld
 
 ## Usage
 
+### Basic Usage
+
 ```js
 import remarkMdxld from 'remark-mdxld'
 
@@ -34,6 +36,78 @@ const result = await remark()
     preferDollarPrefix: true, // Use $ instead of @ for YAML-LD properties
   })
   .process(yourMarkdown)
+```
+
+### Next.js
+
+```js
+// next.config.js
+import remarkMdxld from 'remark-mdxld'
+
+const withMDX = require('@next/mdx')({
+  options: {
+    remarkPlugins: [
+      [remarkMdxld, { preferDollarPrefix: true }]
+    ]
+  }
+})
+
+export default withMDX({
+  pageExtensions: ['js', 'jsx', 'mdx']
+})
+```
+
+```jsx
+// pages/example.mdx
+---
+$type: https://mdx.org.ai/BlogPost
+title: My Blog Post
+description: Example blog post with YAML-LD
+---
+
+# {frontmatter.title}
+
+Your content here...
+```
+
+### Vite
+
+```js
+// vite.config.js
+import { defineConfig } from 'vite'
+import mdx from '@mdx-js/rollup'
+import remarkMdxld from 'remark-mdxld'
+
+export default defineConfig({
+  plugins: [
+    mdx({
+      remarkPlugins: [
+        [remarkMdxld, { preferDollarPrefix: true }]
+      ]
+    })
+  ]
+})
+```
+
+### ESBuild
+
+```js
+// build.js
+import * as esbuild from 'esbuild'
+import mdx from '@mdx-js/esbuild'
+import remarkMdxld from 'remark-mdxld'
+
+await esbuild.build({
+  entryPoints: ['src/index.mdx'],
+  outfile: 'dist/index.js',
+  plugins: [
+    mdx({
+      remarkPlugins: [
+        [remarkMdxld, { preferDollarPrefix: true }]
+      ]
+    })
+  ]
+})
 ```
 
 ## Example
