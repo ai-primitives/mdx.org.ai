@@ -1,4 +1,6 @@
 import { DataFormat } from '@clickhouse/client';
+import { ClickhouseClient } from './clickhouse';
+import type { Env as HonoBaseEnv } from 'hono/types';
 
 export interface Env extends Record<string, unknown> {
   EPCIS_KV: KVNamespace;
@@ -7,6 +9,16 @@ export interface Env extends Record<string, unknown> {
   CLICKHOUSE_USER: string;
   CLICKHOUSE_PASSWORD: string;
 }
+
+export interface Variables {
+  clickhouse: ClickhouseClient;
+  validatedAt?: string;
+}
+
+export type HonoEnv = {
+  Bindings: Env;
+  Variables: Variables;
+} & HonoBaseEnv;
 
 export interface EPCISEvent extends Record<string, unknown> {
   eventID: string;

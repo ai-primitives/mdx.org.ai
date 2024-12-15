@@ -3,16 +3,8 @@ import { cors } from 'hono/cors';
 import { HTTPException } from 'hono/http-exception';
 import type { Context, MiddlewareHandler } from 'hono';
 import { ClickhouseClient } from './clickhouse';
-import type { EPCISEvent, Env } from './types';
-
-type Variables = {
-  clickhouse: ClickhouseClient;
-};
-
-type HonoEnv = {
-  Bindings: Env;
-  Variables: Variables;
-};
+import { eventValidationMiddleware } from './middleware/validation';
+import type { EPCISEvent, HonoEnv } from './types';
 
 const app = new Hono<HonoEnv>();
 
@@ -38,6 +30,7 @@ const clickhouseMiddleware: MiddlewareHandler<HonoEnv> = async (c, next) => {
 // Add middleware
 app.use('*', clickhouseMiddleware);
 app.use('*', cors());
+app.use('/capture', eventValidationMiddleware);
 
 // Discovery endpoints
 app.options('/', async (c: Context) => {
