@@ -6,11 +6,14 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "docs"
   ],
   "scripts": {
     "build": "tsc",
-    "test": "vitest"
+    "test": "vitest",
+    "docs": "typedoc",
+    "prepublishOnly": "pnpm run build && pnpm run test && pnpm run docs"
   },
   "keywords": [
     "mdx",
@@ -25,6 +28,7 @@
   },
   "devDependencies": {
     "typescript": "^5.7.2",
+    "typedoc": "^0.25.7",
     "vitest": "^1.0.4"
   }
 }
