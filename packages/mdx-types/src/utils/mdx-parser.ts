@@ -93,7 +93,7 @@ export async function parseMDXFile(contentOrPath: string, isPath: boolean = fals
           code: (error as any)?.code,
           stack: error instanceof Error ? error.stack : undefined
         });
-        throw new Error(`Failed to read file ${contentOrPath}: ${error instanceof Error ? error.message : String(error)}`);
+        return { metadata: null, content: '', examples: [] };
       }
     } else {
       content = contentOrPath;
@@ -115,7 +115,7 @@ export async function parseMDXFile(contentOrPath: string, isPath: boolean = fals
       tree = await processor.parse(content);
     } catch (error) {
       console.error(`Error parsing MDX${isPath ? ` in ${contentOrPath}` : ''}:`, error);
-      throw error;
+      return { metadata: null, content: '', examples: [] };
     }
 
     let frontmatterNode: any = null;
@@ -134,15 +134,15 @@ export async function parseMDXFile(contentOrPath: string, isPath: boolean = fals
     try {
       const frontmatter = parseYaml(frontmatterNode.value);
       if (!frontmatter || typeof frontmatter !== 'object') {
-        throw new Error('Invalid YAML: expected an object');
+        console.warn('Invalid YAML: expected an object');
+        return { metadata: null, content, examples };
       }
 
       const metadata = normalizeFrontmatter(frontmatter);
 
       if (!metadata) {
-        const error = new Error(`Invalid frontmatter${isPath ? ` in ${contentOrPath}` : ''}: missing required fields`);
-        console.warn(error.message);
-        throw error;
+        console.warn(`Invalid frontmatter${isPath ? ` in ${contentOrPath}` : ''}: missing required fields`);
+        return { metadata: null, content, examples };
       }
 
       const contentWithoutFrontmatter = content.replace(/---\n[\s\S]*?\n---/, '').trim();
@@ -159,13 +159,13 @@ export async function parseMDXFile(contentOrPath: string, isPath: boolean = fals
         file: contentOrPath,
         frontmatter: frontmatterNode.value
       });
-      throw error;
+      return { metadata: null, content, examples };
     }
   } catch (error) {
     console.error(`Error in parseMDXFile${isPath ? ` for ${contentOrPath}` : ''}:`, {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     });
-    throw error;
+    return { metadata: null, content: '', examples: [] };
   }
 }

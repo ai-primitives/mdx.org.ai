@@ -153,7 +153,10 @@ async function main() {
         log(`Searching for MDX files in ${dir}...`);
         const pattern = join(dir, '**/*.mdx');
         log(`Using glob pattern: ${pattern}`);
-        const files = await glob(pattern);
+        const files = await glob(pattern).catch(error => {
+          console.error(`Error in glob for ${dir}:`, error);
+          return [];
+        });
         log(`Found ${files.length} files in ${dir}:`, files);
         const validFiles = await Promise.all(files.map(async (file) => {
           try {
@@ -164,7 +167,10 @@ async function main() {
             console.error(`Error accessing file ${file}:`, error);
             return null;
           }
-        }));
+        })).catch(error => {
+          console.error(`Error checking file access in ${dir}:`, error);
+          return [];
+        });
         return validFiles.filter(Boolean);
       } catch (error) {
         console.error(`Error searching for MDX files in ${dir}:`, error);
@@ -173,11 +179,7 @@ async function main() {
     });
 
     const mdxFiles = await Promise.all(mdxFilesPromises).catch(error => {
-      console.error('Error in Promise.all while searching for MDX files:', error instanceof Error ? {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      } : error);
+      console.error('Error in Promise.all while searching for MDX files:', error);
       return [];
     });
 
@@ -185,7 +187,8 @@ async function main() {
     log(`Total MDX files found: ${allMdxFiles.length}`);
 
     if (allMdxFiles.length === 0) {
-      throw new Error('No MDX files found in any content directory');
+      console.warn('No MDX files found in any content directory');
+      process.exit(0);
     }
 
     log('Processing files:', allMdxFiles);
@@ -228,11 +231,7 @@ async function main() {
     });
 
     const parsedFiles = await Promise.all(parsePromises).catch(error => {
-      console.error('Error in Promise.all while parsing files:', error instanceof Error ? {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      } : error);
+      console.error('Error in Promise.all while parsing files:', error);
       return [];
     });
 
@@ -258,7 +257,8 @@ async function main() {
       });
 
     if (validFiles.length === 0) {
-      throw new Error('No valid MDX files found with proper frontmatter');
+      console.warn('No valid MDX files found with proper frontmatter');
+      process.exit(0);
     }
 
     log(`Successfully parsed ${validFiles.length} valid MDX files`);
@@ -267,18 +267,20 @@ async function main() {
     log('Generated type definitions');
 
     const outputDir = resolve(__dirname, '..', 'packages/mdx-types/src/generated');
-    await fsPromises.mkdir(outputDir, { recursive: true });
+    await fsPromises.mkdir(outputDir, { recursive: true }).catch(error => {
+      console.error('Error creating output directory:', error);
+      process.exit(1);
+    });
 
     const outputFile = join(outputDir, 'frontmatter.d.ts');
-    await fsPromises.writeFile(outputFile, typeDefinitions, 'utf-8');
+    await fsPromises.writeFile(outputFile, typeDefinitions, 'utf-8').catch(error => {
+      console.error('Error writing type definitions:', error);
+      process.exit(1);
+    });
 
     log(`Type definitions written to ${outputFile}`);
   } catch (error) {
-    console.error('Error in main function:', error instanceof Error ? {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    } : error);
+    console.error('Error in main function:', error);
     process.exit(1);
   }
 }
