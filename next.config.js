@@ -1,6 +1,4 @@
-import nextra from 'nextra'
-
-const withNextra = nextra({
+const withNextra = require('nextra')({
   theme: 'nextra-theme-docs',
   themeConfig: './theme.config.jsx',
   defaultShowCopyCode: true,
@@ -9,7 +7,7 @@ const withNextra = nextra({
   }
 })
 
-export default withNextra({
+module.exports = withNextra({
   experimental: {
     appDir: true
   }
