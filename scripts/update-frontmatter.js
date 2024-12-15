@@ -80,14 +80,15 @@ function updateFrontmatter(content, filename) {
 
 // Main function
 function main() {
-  const contentDir = path.join(__dirname, '..', 'content');
-  const mdxFiles = globSync('**/*.mdx', { cwd: contentDir });
+  const baseDir = process.argv[2] || 'content';
+  const targetDir = path.join(__dirname, '..', baseDir);
+  console.log(`Processing files in: ${targetDir}`);
 
-  console.log('Processing files in:', contentDir);
+  const mdxFiles = globSync('**/*.mdx', { cwd: targetDir });
   console.log('Found files:', mdxFiles);
 
   for (const file of mdxFiles) {
-    const fullPath = path.join(contentDir, file);
+    const fullPath = path.join(targetDir, file);
     console.log(`Processing ${file}...`);
 
     try {
