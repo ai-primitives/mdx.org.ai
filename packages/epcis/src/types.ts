@@ -47,12 +47,12 @@ export interface AnalyticsParams {
 }
 
 export interface AnalyticsResult {
-  event_date: string;
-  event_type: string;
-  business_step: string;
+  eventDate: string;
+  eventType: string;
+  businessStep: string;
   disposition: string;
-  event_count: number;
-  unique_events: number;
-  unique_locations: number;
-  unique_epcs: number;
+  eventCount: number;
+  uniqueEvents: number;
+  uniqueLocations: number;
+  uniqueEpcs: number;
 }

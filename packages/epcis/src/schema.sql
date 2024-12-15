@@ -1,37 +1,37 @@
 -- EPCIS Events Schema for Clickhouse
 -- This schema supports the core EPCIS event types and additional analytics capabilities
 
-CREATE TABLE IF NOT EXISTS epcis_events (
+CREATE TABLE IF NOT EXISTS epcisEvents (
     -- Common fields for all event types
-    event_id String,
-    event_type Enum8(
+    eventId String,
+    eventType Enum8(
         'ObjectEvent' = 1,
         'AggregationEvent' = 2,
         'TransactionEvent' = 3,
         'TransformationEvent' = 4
     ),
-    event_time DateTime64(3),
-    record_time DateTime64(3),
-    event_timezone String,
+    eventTime DateTime64(3),
+    recordTime DateTime64(3),
+    eventTimezone String,
 
     -- Business context
-    business_step String,
+    businessStep String,
     disposition String,
-    read_point String,
-    business_location String,
+    readPoint String,
+    businessLocation String,
 
     -- EPCs and quantities
-    epc_list Array(String),
-    quantity_list Array(
+    epcList Array(String),
+    quantityList Array(
         Tuple(
-            product_class String,
+            productClass String,
             quantity Float64,
             uom String
         )
     ),
 
     -- Business transaction information
-    business_transaction_list Array(
+    businessTransactionList Array(
         Tuple(
             type String,
             id String
@@ -39,13 +39,13 @@ CREATE TABLE IF NOT EXISTS epcis_events (
     ),
 
     -- Source/Destination
-    source_list Array(
+    sourceList Array(
         Tuple(
             type String,
             id String
         )
     ),
-    destination_list Array(
+    destinationList Array(
         Tuple(
             type String,
             id String
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS epcis_events (
     ),
 
     -- Sensor information
-    sensor_element_list Array(
+    sensorElementList Array(
         Tuple(
             type String,
             value Float64,
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS epcis_events (
     ),
 
     -- Extension fields for analytics
-    error_declaration Nullable(String),
+    errorDeclaration Nullable(String),
     action Enum8(
         'ADD' = 1,
         'OBSERVE' = 2,
@@ -71,43 +71,43 @@ CREATE TABLE IF NOT EXISTS epcis_events (
     ),
 
     -- Metadata
-    created_at DateTime64(3) DEFAULT now64(3),
-    tenant_id String,
+    createdAt DateTime64(3) DEFAULT now64(3),
+    tenantId String,
 
     -- Optimization fields
-    event_date Date MATERIALIZED toDate(event_time),
-    event_month UInt32 MATERIALIZED toYYYYMM(event_time)
+    eventDate Date MATERIALIZED toDate(eventTime),
+    eventMonth UInt32 MATERIALIZED toYYYYMM(eventTime)
 )
 ENGINE = MergeTree()
-PARTITION BY event_month
-ORDER BY (event_date, event_time, event_id)
+PARTITION BY eventMonth
+ORDER BY (eventDate, eventTime, eventId)
 SETTINGS index_granularity = 8192;
 
 -- Materialized view for real-time analytics
-CREATE MATERIALIZED VIEW IF NOT EXISTS epcis_events_analytics
+CREATE MATERIALIZED VIEW IF NOT EXISTS epcisEventsAnalytics
 ENGINE = AggregatingMergeTree()
-PARTITION BY event_month
-ORDER BY (event_date, event_type, business_step, disposition)
+PARTITION BY eventMonth
+ORDER BY (eventDate, eventType, businessStep, disposition)
 AS SELECT
-    event_date,
-    event_month,
-    event_type,
-    business_step,
+    eventDate,
+    eventMonth,
+    eventType,
+    businessStep,
     disposition,
-    count() as event_count,
-    uniqExact(event_id) as unique_events,
-    uniqExact(business_location) as unique_locations,
-    uniqExact(arrayJoin(epc_list)) as unique_epcs
-FROM epcis_events
+    count() as eventCount,
+    uniqExact(eventId) as uniqueEvents,
+    uniqExact(businessLocation) as uniqueLocations,
+    uniqExact(arrayJoin(epcList)) as uniqueEpcs
+FROM epcisEvents
 GROUP BY
-    event_date,
-    event_month,
-    event_type,
-    business_step,
+    eventDate,
+    eventMonth,
+    eventType,
+    businessStep,
     disposition;
 
 -- Create dictionary for business step codes
-CREATE DICTIONARY IF NOT EXISTS business_step_dict (
+CREATE DICTIONARY IF NOT EXISTS businessStepDict (
     code String,
     name String,
     description String
@@ -118,7 +118,7 @@ LIFETIME(3600)
 LAYOUT(HASHED());
 
 -- Create dictionary for disposition codes
-CREATE DICTIONARY IF NOT EXISTS disposition_dict (
+CREATE DICTIONARY IF NOT EXISTS dispositionDict (
     code String,
     name String,
     description String

@@ -16,48 +16,48 @@ export class ClickhouseClient {
   async insertEvent(event: EPCISEvent): Promise<void> {
     const query: ClickhouseQuery = {
       query: `
-        INSERT INTO epcis_events (
-          event_id,
-          event_type,
-          event_time,
-          record_time,
-          event_timezone,
-          business_step,
+        INSERT INTO epcisEvents (
+          eventId,
+          eventType,
+          eventTime,
+          recordTime,
+          eventTimezone,
+          businessStep,
           disposition,
-          read_point,
-          business_location,
-          epc_list,
+          readPoint,
+          businessLocation,
+          epcList,
           action,
-          tenant_id
+          tenantId
         ) VALUES (
-          {event_id: String},
-          {event_type: String},
-          {event_time: DateTime64(3)},
-          {record_time: DateTime64(3)},
-          {event_timezone: String},
-          {business_step: String},
+          {eventId: String},
+          {eventType: String},
+          {eventTime: DateTime64(3)},
+          {recordTime: DateTime64(3)},
+          {eventTimezone: String},
+          {businessStep: String},
           {disposition: String},
-          {read_point: String},
-          {business_location: String},
-          {epc_list: Array(String)},
+          {readPoint: String},
+          {businessLocation: String},
+          {epcList: Array(String)},
           {action: String},
-          {tenant_id: String}
+          {tenantId: String}
         )
       `,
       format: 'JSONEachRow' as DataFormat,
       parameters: {
-        event_id: event.eventID,
-        event_type: event.eventType,
-        event_time: event.eventTime,
-        record_time: event.recordTime,
-        event_timezone: event.eventTimezone,
-        business_step: event.businessStep,
+        eventId: event.eventID,
+        eventType: event.eventType,
+        eventTime: event.eventTime,
+        recordTime: event.recordTime,
+        eventTimezone: event.eventTimezone,
+        businessStep: event.businessStep,
         disposition: event.disposition,
-        read_point: event.readPoint,
-        business_location: event.businessLocation,
-        epc_list: event.epcList || [],
+        readPoint: event.readPoint,
+        businessLocation: event.businessLocation,
+        epcList: event.epcList || [],
         action: event.action,
-        tenant_id: event.tenantId
+        tenantId: event.tenantId
       }
     };
 
@@ -77,19 +77,19 @@ export class ClickhouseClient {
     } = params;
 
     let whereClause = '1=1';
-    if (eventId) whereClause += ` AND event_id = {eventId: String}`;
-    if (startTime) whereClause += ` AND event_time >= {startTime: DateTime64(3)}`;
-    if (endTime) whereClause += ` AND event_time <= {endTime: DateTime64(3)}`;
-    if (eventType) whereClause += ` AND event_type = {eventType: String}`;
-    if (businessStep) whereClause += ` AND business_step = {businessStep: String}`;
+    if (eventId) whereClause += ` AND eventId = {eventId: String}`;
+    if (startTime) whereClause += ` AND eventTime >= {startTime: DateTime64(3)}`;
+    if (endTime) whereClause += ` AND eventTime <= {endTime: DateTime64(3)}`;
+    if (eventType) whereClause += ` AND eventType = {eventType: String}`;
+    if (businessStep) whereClause += ` AND businessStep = {businessStep: String}`;
     if (disposition) whereClause += ` AND disposition = {disposition: String}`;
 
     const query: ClickhouseQuery = {
       query: `
         SELECT *
-        FROM epcis_events
+        FROM epcisEvents
         WHERE ${whereClause}
-        ORDER BY event_time DESC
+        ORDER BY eventTime DESC
         LIMIT {limit: UInt32}
         OFFSET {offset: UInt32}
       `,
@@ -114,24 +114,24 @@ export class ClickhouseClient {
     const { startDate, endDate, eventType } = params;
 
     let whereClause = '1=1';
-    if (startDate) whereClause += ` AND event_date >= {startDate: Date}`;
-    if (endDate) whereClause += ` AND event_date <= {endDate: Date}`;
-    if (eventType) whereClause += ` AND event_type = {eventType: String}`;
+    if (startDate) whereClause += ` AND eventDate >= {startDate: Date}`;
+    if (endDate) whereClause += ` AND eventDate <= {endDate: Date}`;
+    if (eventType) whereClause += ` AND eventType = {eventType: String}`;
 
     const query: ClickhouseQuery = {
       query: `
         SELECT
-          event_date,
-          event_type,
-          business_step,
+          eventDate,
+          eventType,
+          businessStep,
           disposition,
-          event_count,
-          unique_events,
-          unique_locations,
-          unique_epcs
-        FROM epcis_events_analytics
+          eventCount,
+          uniqueEvents,
+          uniqueLocations,
+          uniqueEpcs
+        FROM epcisEventsAnalytics
         WHERE ${whereClause}
-        ORDER BY event_date DESC
+        ORDER BY eventDate DESC
       `,
       format: 'JSONEachRow' as DataFormat,
       parameters: {
