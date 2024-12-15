@@ -22,6 +22,10 @@ export interface MDXParseResult {
   examples: string[];
 }
 
+export interface ValidMDXParseResult extends MDXParseResult {
+  metadata: MDXMetadata;
+}
+
 export function isValidMetadata(metadata: unknown): metadata is MDXMetadata {
   if (!metadata || typeof metadata !== 'object') return false;
   const m = metadata as Record<string, unknown>;
@@ -75,21 +79,26 @@ function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata | n
   }
 }
 
-export async function parseMDXFile(filePath: string): Promise<MDXParseResult> {
+export async function parseMDXFile(contentOrPath: string, isPath: boolean = false): Promise<MDXParseResult> {
   try {
-    console.log(`Reading file: ${filePath}`);
-    const content = await fs.readFile(filePath, 'utf-8').catch(error => {
-      console.error(`Error reading file ${filePath}:`, {
-        name: error.name,
-        message: error.message,
-        code: error.code,
-        stack: error.stack
+    let content: string;
+    if (isPath) {
+      console.log(`Reading file: ${contentOrPath}`);
+      content = await fs.readFile(contentOrPath, 'utf-8').catch(error => {
+        console.error(`Error reading file ${contentOrPath}:`, {
+          name: error.name,
+          message: error.message,
+          code: error.code,
+          stack: error.stack
+        });
+        throw error;
       });
-      throw error;
-    });
+    } else {
+      content = contentOrPath;
+    }
 
     if (!content.trim()) {
-      console.warn(`Empty file: ${filePath}`);
+      console.warn(`Empty content${isPath ? ` in file: ${contentOrPath}` : ''}`);
       return { metadata: null, content: '', examples: [] };
     }
 
@@ -98,7 +107,7 @@ export async function parseMDXFile(filePath: string): Promise<MDXParseResult> {
       .use(remarkFrontmatter, ['yaml'])
       .use(remarkMdx);
 
-    console.log(`Parsing MDX content for ${filePath}`);
+    console.log(`Parsing MDX content${isPath ? ` for ${contentOrPath}` : ''}`);
     const tree = await processor.parse(content);
 
     let frontmatterNode: any = null;
@@ -109,29 +118,29 @@ export async function parseMDXFile(filePath: string): Promise<MDXParseResult> {
     });
 
     if (!frontmatterNode) {
-      console.warn(`No frontmatter found in ${filePath}`);
+      console.warn(`No frontmatter found${isPath ? ` in ${contentOrPath}` : ''}`);
       return { metadata: null, content, examples };
     }
 
-    console.log(`Parsing frontmatter for ${filePath}`);
+    console.log(`Parsing frontmatter${isPath ? ` for ${contentOrPath}` : ''}`);
     const frontmatter = parseYaml(frontmatterNode.value);
     const metadata = normalizeFrontmatter(frontmatter);
 
     if (!metadata) {
-      console.warn(`Invalid frontmatter in ${filePath}`);
+      console.warn(`Invalid frontmatter${isPath ? ` in ${contentOrPath}` : ''}`);
       return { metadata: null, content, examples };
     }
 
     const contentWithoutFrontmatter = content.replace(/---\n[\s\S]*?\n---/, '').trim();
 
-    console.log(`Successfully parsed ${filePath}`);
+    console.log(`Successfully parsed${isPath ? ` ${contentOrPath}` : ' content'}`);
     return {
       metadata,
       content: contentWithoutFrontmatter,
       examples
     };
   } catch (error) {
-    console.error(`Error parsing MDX file ${filePath}:`, error);
+    console.error(`Error parsing MDX${isPath ? ` file ${contentOrPath}` : ' content'}:`, error);
     return { metadata: null, content: '', examples: [] };
   }
 }

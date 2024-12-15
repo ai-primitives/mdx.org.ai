@@ -10,17 +10,28 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import { globSync } from 'glob';
-import { parseMDXFile, type MDXParseResult, type MDXMetadata, isValidMetadata } from '../packages/mdx-types/src/utils/mdx-parser.js';
-import { promises as fs, existsSync, mkdirSync } from 'node:fs';
+import { join } from 'path';
+import { existsSync } from 'fs';
+import { mkdir, writeFile } from 'fs/promises';
+import { glob } from 'glob';
+import {
+  parseMDXFile,
+  type MDXParseResult,
+  type ValidMDXParseResult,
+  type MDXMetadata,
+  isValidMetadata
+} from '../packages/mdx-types/src/utils/mdx-parser.js';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-log('Starting type generation script...');
-log('Current directory:', __dirname);
+// Error type for better error handling
+interface TypeGenerationError extends Error {
+  code?: string;
+  stack?: string;
+}
 
 async function generateTypeDefinitions(files: ValidMDXParseResult[]): Promise<string> {
   try {
@@ -75,19 +86,6 @@ export type MDXFrontmatter = ${Array.from(uniqueTypes).map(type => `${type}Front
   }
 }
 
-interface ValidMDXParseResult {
-  metadata: {
-    $type: string;
-    title: string;
-    description: string;
-    $context?: string;
-    $id?: string;
-    [key: string]: any;
-  };
-  content: string;
-  examples: string[];
-}
-
 function isValidParseResult(result: MDXParseResult | null): result is ValidMDXParseResult {
   if (!result) return false;
   const metadata = result.metadata;
@@ -102,100 +100,76 @@ function isValidParseResult(result: MDXParseResult | null): result is ValidMDXPa
 
 async function main() {
   try {
-    log('Starting main function...');
+    log('Starting type generation...');
 
     const contentDirs = [
-      join(__dirname, '../examples'),
-      join(__dirname, '../content'),
-      join(__dirname, '../package'),
-      join(__dirname, '../packages/mdx-types/content/types')
-    ];
-
-    log('Content directories to process:', contentDirs);
-
-    for (const dir of contentDirs) {
-      try {
-        if (!existsSync(dir)) {
-          log(`Warning: Directory does not exist: ${dir}`);
-          continue;
-        }
-        await fs.access(dir);
-        log(`Directory verified: ${dir}`);
-      } catch (error) {
-        console.error(`Error accessing directory ${dir}:`, error);
+      'examples',
+      'content',
+      'package',
+      'packages/mdx-types/content/types'
+    ].map(dir => {
+      const fullPath = join(process.cwd(), dir);
+      if (!existsSync(fullPath)) {
+        log(`Warning: Directory ${fullPath} does not exist`);
+        return null;
       }
+      return fullPath;
+    }).filter(Boolean) as string[];
+
+    if (contentDirs.length === 0) {
+      throw new Error('No valid content directories found');
     }
 
-    const mdxFiles = contentDirs.flatMap(dir => {
+    log('Content directories:', contentDirs);
+
+    const mdxFilesPromises = contentDirs.map(async dir => {
       try {
-        if (!existsSync(dir)) {
-          log(`Skipping non-existent directory: ${dir}`);
-          return [];
-        }
-        const files = globSync('**/*.mdx', {
-          cwd: dir,
-          absolute: true
-        });
-        log(`Found ${files.length} MDX files in ${dir}`);
-        return files;
+        log(`Searching for MDX files in ${dir}...`);
+        const pattern = join(dir, '**/*.mdx');
+        log(`Using glob pattern: ${pattern}`);
+        return await glob(pattern);
       } catch (error) {
-        console.error(`Error finding MDX files in ${dir}:`, error);
+        console.error(`Error searching for MDX files in ${dir}:`, error);
         return [];
       }
     });
 
-    if (mdxFiles.length === 0) {
-      log('No MDX files found in any of the content directories');
-      process.exit(0);
-    }
-
-    log(`Total MDX files found: ${mdxFiles.length}`);
-    log('MDX files:', mdxFiles);
-
-    const parsedFiles = await Promise.all(
-      mdxFiles.map(async (file) => {
-        try {
-          log(`Parsing file: ${file}`);
-          const result = await parseMDXFile(file);
-          log(`Successfully parsed ${file}`);
-          return result;
-        } catch (error) {
-          console.error(`Error parsing ${file}:`, error);
-          return null;
-        }
-      })
-    ).catch(error => {
-      console.error('Error in Promise.all while parsing files:');
-      console.error(error instanceof Error ? error.stack : JSON.stringify(error, null, 2));
+    const mdxFiles = await Promise.all(mdxFilesPromises).catch(error => {
+      console.error('Error in Promise.all while searching for MDX files:', error);
       throw error;
     });
 
-    const validParsedFiles = parsedFiles
-      .filter((file: MDXParseResult | null): file is NonNullable<typeof file> => {
-        if (!file) {
-          log('Skipping null file result');
-          return false;
-        }
-        if (!file.metadata) {
-          log('Skipping file with null metadata');
-          return false;
-        }
-        if (!isValidMetadata(file.metadata)) {
-          log('Skipping file with invalid metadata structure');
-          return false;
-        }
-        return true;
-      }) as ValidMDXParseResult[];
+    const allMdxFiles = mdxFiles.flat();
+    log(`Total MDX files found: ${allMdxFiles.length}`);
 
-    if (validParsedFiles.length === 0) {
-      log('No valid MDX files were successfully parsed');
-      process.exit(0);
+    if (allMdxFiles.length === 0) {
+      throw new Error('No MDX files found in any content directory');
     }
 
-    log(`Successfully parsed ${validParsedFiles.length} MDX files`);
+    const parsePromises = allMdxFiles.map(async (filePath: string) => {
+      try {
+        log(`Parsing ${filePath}...`);
+        return await parseMDXFile(filePath, true);
+      } catch (error) {
+        console.error(`Error parsing ${filePath}:`, error);
+        return null;
+      }
+    });
+
+    const parsedFiles = await Promise.all(parsePromises).catch(error => {
+      console.error('Error in Promise.all while parsing files:', error);
+      throw error;
+    });
+
+    const validParsedFiles = parsedFiles.filter(isValidParseResult);
+    log(`Successfully parsed ${validParsedFiles.length} valid MDX files out of ${parsedFiles.length} total files`);
+
+    if (validParsedFiles.length === 0) {
+      throw new Error('No valid MDX files found after parsing');
+    }
 
     try {
-      const validFiles = validParsedFiles.map(file => ({
+      const validFiles = validParsedFiles.map((file: ValidMDXParseResult) => ({
         ...file,
         metadata: {
           ...file.metadata,
@@ -206,24 +180,24 @@ async function main() {
       const typeDefinitions = await generateTypeDefinitions(validFiles);
 
       const generatedDir = join(__dirname, '../packages/mdx-types/src/generated');
-      if (!existsSync(generatedDir)) {
-        log(`Creating generated types directory: ${generatedDir}`);
-        mkdirSync(generatedDir, { recursive: true });
-      }
+      await mkdir(generatedDir, { recursive: true }).catch((error: TypeGenerationError) => {
+        console.error('Error creating generated directory:', error);
+        throw error;
+      });
 
-      const outputFile = join(generatedDir, 'types.ts');
-      await fs.writeFile(outputFile, typeDefinitions);
-      log(`Successfully wrote type definitions to ${outputFile}`);
+      const outputPath = join(generatedDir, 'frontmatter.d.ts');
+      await writeFile(outputPath, typeDefinitions, 'utf-8').catch((error: TypeGenerationError) => {
+        console.error('Error writing type definitions:', error);
+        throw error;
+      });
+
+      log('Successfully generated type definitions at:', outputPath);
     } catch (error) {
-      console.error('Error generating type definitions:', error);
+      console.error('Error in type generation:', error);
       throw error;
     }
-
   } catch (error) {
-    console.error('Error in main function:', error);
-    if (error instanceof Error) {
-      console.error('Stack trace:', error.stack);
-    }
+    console.error('Error in main function:', error instanceof Error ? error.stack : JSON.stringify(error, null, 2));
     process.exit(1);
   }
 }
