@@ -155,7 +155,7 @@ async function main() {
       })
     ).catch(error => {
       console.error('Error in Promise.all while parsing files:', error);
-      return [];
+      throw error;
     });
 
     const validParsedFiles = parsedFiles
@@ -201,7 +201,7 @@ async function main() {
       log(`Successfully wrote type definitions to ${outputFile}`);
     } catch (error) {
       console.error('Error generating type definitions:', error);
-      process.exit(1);
+      throw error;
     }
 
   } catch (error) {

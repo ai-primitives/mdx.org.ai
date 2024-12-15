@@ -32,7 +32,7 @@ export function isValidMetadata(metadata: unknown): metadata is MDXMetadata {
   );
 }
 
-function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata {
+function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata | null {
   try {
     const {
       $type, '@type': atType,
@@ -47,15 +47,18 @@ function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata {
     const normalizedType = ($type || atType || '').replace(/^https:\/\/mdx\.org\.ai\//, '');
 
     if (!normalizedType) {
-      throw new Error('Missing required field: $type or @type');
+      console.warn('Missing required field: $type or @type');
+      return null;
     }
 
     if (!title) {
-      throw new Error('Missing required field: title');
+      console.warn('Missing required field: title');
+      return null;
     }
 
     if (!description) {
-      throw new Error('Missing required field: description');
+      console.warn('Missing required field: description');
+      return null;
     }
 
     return {
@@ -68,7 +71,7 @@ function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata {
     };
   } catch (error) {
     console.error('Error normalizing frontmatter:', error);
-    throw error;
+    return null;
   }
 }
 
@@ -78,7 +81,8 @@ export async function parseMDXFile(filePath: string): Promise<MDXParseResult> {
     const content = await fs.readFile(filePath, 'utf-8');
 
     if (!content.trim()) {
-      throw new Error(`Empty file: ${filePath}`);
+      console.warn(`Empty file: ${filePath}`);
+      return { metadata: null, content: '', examples: [] };
     }
 
     const processor = unified()
@@ -97,23 +101,17 @@ export async function parseMDXFile(filePath: string): Promise<MDXParseResult> {
     });
 
     if (!frontmatterNode) {
-      throw new Error(`No frontmatter found in ${filePath}`);
+      console.warn(`No frontmatter found in ${filePath}`);
+      return { metadata: null, content, examples };
     }
 
     console.log(`Parsing frontmatter for ${filePath}`);
     const frontmatter = parseYaml(frontmatterNode.value);
     const metadata = normalizeFrontmatter(frontmatter);
 
-    if (!metadata.$type) {
-      throw new Error(`No $type found in frontmatter of ${filePath}`);
-    }
-
-    if (!metadata.title) {
-      throw new Error(`No title found in frontmatter of ${filePath}`);
-    }
-
-    if (!metadata.description) {
-      throw new Error(`No description found in frontmatter of ${filePath}`);
+    if (!metadata) {
+      console.warn(`Invalid frontmatter in ${filePath}`);
+      return { metadata: null, content, examples };
     }
 
     const contentWithoutFrontmatter = content.replace(/---\n[\s\S]*?\n---/, '').trim();
@@ -124,8 +122,8 @@ export async function parseMDXFile(filePath: string): Promise<MDXParseResult> {
       content: contentWithoutFrontmatter,
       examples
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error(`Error parsing MDX file ${filePath}:`, error);
-    throw error;
+    return { metadata: null, content: '', examples: [] };
   }
 }
