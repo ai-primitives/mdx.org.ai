@@ -4,12 +4,9 @@
 const debug = true;
 const log = (...args: any[]) => debug && console.log(...args);
 
-process.on('unhandledRejection', (error: unknown) => {
-  console.error('UnhandledPromiseRejection:', {
-    message: error instanceof Error ? error.message : String(error),
-    stack: error instanceof Error ? error.stack : 'No stack trace available',
-    details: JSON.stringify(error, null, 2)
-  });
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise);
+  console.error('Reason:', reason);
   process.exit(1);
 });
 
@@ -77,6 +74,15 @@ export interface MDXFrontmatter {
 `;
 }
 
+interface ValidMDXParseResult extends MDXParseResult {
+  metadata: {
+    $type: string;
+    title: string;
+    description: string;
+    [key: string]: unknown;
+  };
+}
+
 async function main() {
   try {
     log('Starting main function...');
@@ -100,6 +106,10 @@ async function main() {
     // Find all MDX files
     const mdxFiles = contentDirs.flatMap(dir => {
       try {
+        if (!existsSync(dir)) {
+          log(`Skipping non-existent directory: ${dir}`);
+          return [];
+        }
         const files = globSync('**/*.mdx', {
           cwd: dir,
           absolute: true
@@ -124,6 +134,8 @@ async function main() {
       mdxFiles.map(async (file) => {
         try {
           log(`Parsing file: ${file}`);
+          const content = await fs.readFile(file, 'utf-8');
+          log(`File content length: ${content.length} bytes`);
           const result = await parseMDXFile(file);
           log(`Successfully parsed ${file}`);
           return result;
@@ -132,9 +144,27 @@ async function main() {
           return null;
         }
       })
-    );
+    ).catch(error => {
+      console.error('Error in Promise.all while parsing files:', error);
+      return [];
+    });
 
-    const validParsedFiles = parsedFiles.filter((file): file is MDXParseResult => file !== null);
+    const validParsedFiles = parsedFiles.filter((file): file is ValidMDXParseResult => {
+      if (!file) return false;
+      if (!file.metadata) return false;
+
+      const metadata = file.metadata;
+      const hasRequiredFields =
+        typeof metadata.$type === 'string' &&
+        typeof metadata.title === 'string' &&
+        typeof metadata.description === 'string';
+
+      if (!hasRequiredFields) {
+        log(`Invalid metadata in file: missing required fields`);
+        return false;
+      }
+      return true;
+    });
 
     if (validParsedFiles.length === 0) {
       throw new Error('No valid MDX files were successfully parsed');
@@ -143,7 +173,16 @@ async function main() {
     log(`Successfully parsed ${validParsedFiles.length} MDX files`);
 
     // Generate type definitions
-    const metadataList = validParsedFiles.map(file => file.metadata);
+    const metadataList = validParsedFiles.map(file => {
+      const metadata = file.metadata;
+      // Create a new object with validated fields
+      return {
+        ...metadata,
+        $type: metadata.$type.replace(/^https:\/\/mdx\.org\.ai\//, ''),
+        title: metadata.title,
+        description: metadata.description
+      };
+    });
     const typeDefinitions = generateTypeDefinitions(metadataList);
 
     // Ensure the generated directory exists
@@ -160,12 +199,18 @@ async function main() {
 
   } catch (error) {
     console.error('Error in main function:', error);
+    if (error instanceof Error) {
+      console.error('Stack trace:', error.stack);
+    }
     process.exit(1);
   }
 }
 
-// Execute main function
+// Execute main function with proper error handling
 main().catch(error => {
   console.error('Unhandled error in main:', error);
+  if (error instanceof Error) {
+    console.error('Stack trace:', error.stack);
+  }
   process.exit(1);
 });
