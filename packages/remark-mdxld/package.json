@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "vitest",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
@@ -26,6 +27,8 @@
     "remark-frontmatter": "^5.0.0",
     "remark-gfm": "^4.0.0",
     "remark-mdx": "^3.1.0",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
     "unified": "^11.0.5",
     "yaml": "^2.6.1"
   },
@@ -33,7 +36,9 @@
     "@types/mdast": "^4.0.4",
     "@types/node": "^20.10.0",
     "@types/unist": "^3.0.3",
+    "@types/vfile": "^4.0.0",
     "typescript": "^5.3.0",
+    "vfile": "^6.0.3",
     "vitest": "^1.0.0"
   },
   "peerDependencies": {
