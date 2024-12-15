@@ -4,8 +4,8 @@ import type { HonoEnv } from '../types';
 
 const NAMESPACE_MAP = {
   '/capture': 'epcis_capture',
-  '/queries': 'epcis_query',
-  '/subscriptions': 'epcis_subscription'
+  '/query': 'epcis_query',
+  '/subscription': 'epcis_subscription'
 } as const;
 
 export const rateLimitMiddleware: MiddlewareHandler<HonoEnv> = async (c, next) => {
