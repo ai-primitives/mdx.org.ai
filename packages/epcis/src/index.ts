@@ -7,6 +7,7 @@ import { eventValidationMiddleware } from './middleware/validation';
 import { rateLimitMiddleware } from './middleware/rate-limit';
 import captureRoutes from './routes/capture';
 import queryRoutes from './routes/query';
+import subscriptionRoutes from './routes/subscription';
 import type { HonoEnv } from './types';
 
 const app = new Hono<HonoEnv>();
@@ -39,6 +40,7 @@ app.use('/capture', eventValidationMiddleware);
 // Mount routes
 app.route('/capture', captureRoutes);
 app.route('/queries', queryRoutes);
+app.route('/queries', subscriptionRoutes);
 
 // Discovery endpoints
 app.options('/', async (c: Context) => {

@@ -1,15 +1,12 @@
 import type { Context } from 'hono';
-import type { HonoEnv, QueryParams } from './types';
+import type { HonoEnv, QueryDefinition, Subscription, QueryParams } from './types';
 import { WebSocket, WebSocketPair } from '@cloudflare/workers-types';
 
 export async function handleWebSocketUpgrade(
   c: Context<HonoEnv>,
-  queryName: string,
-  params: Record<string, string>
+  queryDef: QueryDefinition,
+  subscription: Subscription
 ): Promise<Response> {
-  const { stream, ...scheduleParams } = params;
-  const isStreaming = stream === 'true';
-
   // Validate upgrade request
   const upgradeHeader = c.req.header('Upgrade');
   if (!upgradeHeader || upgradeHeader.toLowerCase() !== 'websocket') {
@@ -19,16 +16,6 @@ export async function handleWebSocketUpgrade(
       status: 400,
       detail: 'WebSocket upgrade required'
     }, 400);
-  }
-
-  // Get query definition
-  const query = await c.get('clickhouse').getQuery(queryName);
-  if (!query) {
-    return c.json({
-      type: 'epcisException:NoSuchNameException',
-      title: 'Query not found',
-      status: 404
-    }, 404);
   }
 
   // Create WebSocket pair using Cloudflare Workers
@@ -44,7 +31,7 @@ export async function handleWebSocketUpgrade(
       const message = JSON.parse(event.data as string);
       if (message.type === 'getEvents') {
         const queryParams: QueryParams = {
-          ...query.query,
+          ...queryDef.query,
           ...message.params
         };
 
@@ -58,7 +45,7 @@ export async function handleWebSocketUpgrade(
             schemaVersion: '2.0',
             creationDate: new Date().toISOString(),
             epcisBody: {
-              queryName,
+              queryName: subscription.queryName,
               queryResults: events
             }
           }

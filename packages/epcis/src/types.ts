@@ -142,3 +142,27 @@ export interface AnalyticsResult {
   uniqueLocations: number;
   uniqueEpcs: number;
 }
+
+export interface Subscription {
+  id: string;
+  queryName: string;
+  destination: string;
+  schedule?: string;
+  signatureToken?: string;
+  reportIfEmpty: boolean;
+  initialRecordTime?: string;
+  stream: boolean;
+  createdAt: string;
+  lastExecutedAt?: string;
+  status: 'active' | 'paused' | 'error';
+  errorMessage?: string;
+}
+
+export interface SubscriptionParams {
+  destination: string;
+  schedule?: string;
+  signatureToken?: string;
+  reportIfEmpty?: boolean;
+  initialRecordTime?: string;
+  stream?: boolean;
+}
