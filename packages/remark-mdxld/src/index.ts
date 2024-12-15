@@ -1,10 +1,28 @@
 import { Plugin } from 'unified'
+import { unified } from 'unified'
 import { Root, Node } from 'mdast'
 import { VFile } from 'vfile'
+import remarkMdx from 'remark-mdx'
+import remarkGfm from 'remark-gfm'
+import remarkFrontmatter from 'remark-frontmatter'
+import remarkParse from 'remark-parse'
+import remarkStringify from 'remark-stringify'
 import { parseYamlLd, type YamlLdData } from './yaml-ld'
 
 interface RemarkMdxldOptions {
   preferDollarPrefix?: boolean
+  gfm?: boolean
+}
+
+// Create a preset function that returns a configured processor
+export function createProcessor(options: RemarkMdxldOptions = {}) {
+  const { gfm = true } = options
+  return unified()
+    .use(remarkParse)
+    .use(remarkMdx)
+    .use(remarkFrontmatter, ['yaml'])
+    .use(gfm ? remarkGfm : () => (tree: Root) => tree)
+    .use(remarkStringify)
 }
 
 const remarkMdxld: Plugin<[RemarkMdxldOptions?], Root> = (options = {}) => {
@@ -12,12 +30,12 @@ const remarkMdxld: Plugin<[RemarkMdxldOptions?], Root> = (options = {}) => {
 
   return function transformer(tree: Root, file: VFile) {
     // Find and process YAML frontmatter
-    const yamlNode = tree.children.find((node: Node): node is Node & { type: 'yaml', value: string } =>
+    const yamlNode = tree.children.find((node): node is Node & { type: 'yaml', value: string } =>
       node.type === 'yaml'
     )
 
     if (!yamlNode) {
-      const error = new Error('Missing required frontmatter fields')
+      const error = new Error('Missing required frontmatter')
       file.message(error.message)
       throw error
     }
@@ -28,9 +46,8 @@ const remarkMdxld: Plugin<[RemarkMdxldOptions?], Root> = (options = {}) => {
     } catch (error) {
       if (error instanceof Error) {
         file.message(error.message)
-        throw error
       }
-      throw new Error('Failed to parse YAML-LD frontmatter')
+      throw error
     }
 
     return tree
