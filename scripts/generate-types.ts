@@ -149,7 +149,11 @@ async function main() {
     const parsePromises = allMdxFiles.map(async (filePath: string) => {
       try {
         log(`Parsing ${filePath}...`);
-        return await parseMDXFile(filePath, true);
+        const result = await parseMDXFile(filePath, true);
+        if (!result) {
+          console.warn(`Failed to parse ${filePath}`);
+        }
+        return result;
       } catch (error) {
         console.error(`Error parsing ${filePath}:`, error);
         return null;
