@@ -17,11 +17,10 @@ async function processScheduledSubscriptions(clickhouse: ClickhouseClient): Prom
       }
 
       // Update last executed time
-      await clickhouse.updateSubscriptionLastExecuted(subscription.queryName, subscription.id);
+      await clickhouse.updateSubscriptionLastExecuted(subscription.id);
     } catch (error) {
       // Update subscription status on error
       await clickhouse.updateSubscriptionStatus(
-        subscription.queryName,
         subscription.id,
         'error',
         error instanceof Error ? error.message : 'Unknown error'

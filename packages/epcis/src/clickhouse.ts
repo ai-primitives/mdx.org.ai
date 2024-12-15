@@ -1,4 +1,5 @@
 import { createClient, type DataFormat } from '@clickhouse/client';
+import { webcrypto } from 'node:crypto';
 import type {
   EPCISEvent,
   QueryParams,
@@ -265,7 +266,7 @@ export class ClickhouseClient {
 
   async createSubscription(queryName: string, params: SubscriptionParams): Promise<Subscription> {
     const subscription: Subscription = {
-      id: crypto.randomUUID(),
+      id: webcrypto.randomUUID(),
       queryName,
       destination: params.destination,
       schedule: params.schedule,
@@ -317,112 +318,102 @@ export class ClickhouseClient {
   }
 
   async getSubscription(queryName: string, subscriptionId: string): Promise<Subscription | null> {
-    const query = `
-      SELECT *
-      FROM epcisSubscriptions
-      WHERE queryName = {queryName:String}
-        AND id = {id:String}
-      ORDER BY timestamp DESC
-      LIMIT 1
-    `;
-
-    const result = await this.client.query({
-      query,
-      format: 'JSONEachRow',
-      query_params: { queryName, id: subscriptionId }
-    });
-
-    const rows = await result.json<Array<any>>();
-    const row = rows[0];
-
-    if (!row) return null;
-
-    return {
-      ...row,
-      reportIfEmpty: Boolean(row.reportIfEmpty),
-      stream: Boolean(row.stream)
+    const query: ClickhouseQuery = {
+      query: `
+        SELECT *
+        FROM epcisSubscriptions
+        WHERE queryName = {queryName: String}
+        AND id = {id: String}
+        LIMIT 1
+      `,
+      format: 'JSONEachRow' as DataFormat,
+      parameters: {
+        queryName,
+        id: subscriptionId
+      }
     };
+
+    const result = await this.client.query(query);
+    const rows = await result.json<Subscription[]>();
+    return rows.length > 0 ? rows[0] : null;
   }
 
   async deleteSubscription(queryName: string, subscriptionId: string): Promise<boolean> {
-    const query = `
-      ALTER TABLE epcisSubscriptions
-      DELETE WHERE queryName = {queryName:String} AND id = {id:String}
-    `;
+    const query: ClickhouseQuery = {
+      query: `
+        ALTER TABLE epcisSubscriptions DELETE
+        WHERE queryName = {queryName: String}
+        AND id = {id: String}
+      `,
+      format: 'JSONEachRow' as DataFormat,
+      parameters: {
+        queryName,
+        id: subscriptionId
+      }
+    };
 
-    await this.client.query({
-      query,
-      format: 'JSONEachRow',
-      query_params: { queryName, id: subscriptionId }
-    });
-
+    await this.client.query(query);
     return true;
   }
 
   async getActiveScheduledSubscriptions(): Promise<Subscription[]> {
-    const query = `
-      SELECT *
-      FROM epcisSubscriptions
-      WHERE status = 'active'
-        AND stream = 0
+    const query: ClickhouseQuery = {
+      query: `
+        SELECT *
+        FROM epcisSubscriptions
+        WHERE status = 'active'
         AND schedule IS NOT NULL
-        AND (
-          lastExecutedAt IS NULL
-          OR (
-            lastExecutedAt < now64(3) - INTERVAL 1 MINUTE
-            AND schedule LIKE '%*%'
-          )
-        )
-    `;
+        AND stream = 0
+      `,
+      format: 'JSONEachRow' as DataFormat
+    };
 
-    const result = await this.client.query({
-      query,
-      format: 'JSONEachRow'
-    });
+    const result = await this.client.query(query);
+    const rows = await result.json<Array<Record<string, unknown>>>();
 
-    const rows = await result.json<Array<any>>();
     return rows.map(row => ({
       ...row,
       reportIfEmpty: Boolean(row.reportIfEmpty),
       stream: Boolean(row.stream)
-    }));
+    })) as Subscription[];
   }
 
-  async updateSubscriptionLastExecuted(queryName: string, subscriptionId: string): Promise<void> {
-    const query = `
-      ALTER TABLE epcisSubscriptions
-      UPDATE lastExecutedAt = now64(3)
-      WHERE queryName = {queryName:String} AND id = {id:String}
-    `;
+  async updateSubscriptionLastExecuted(subscriptionId: string): Promise<void> {
+    const query: ClickhouseQuery = {
+      query: `
+        ALTER TABLE epcisSubscriptions
+        UPDATE lastExecutedAt = {lastExecutedAt: String}
+        WHERE id = {id: String}
+      `,
+      format: 'JSONEachRow' as DataFormat,
+      parameters: {
+        id: subscriptionId,
+        lastExecutedAt: new Date().toISOString()
+      }
+    };
 
-    await this.client.query({
-      query,
-      format: 'JSONEachRow',
-      query_params: { queryName, id: subscriptionId }
-    });
+    await this.client.query(query);
   }
 
   async updateSubscriptionStatus(
-    queryName: string,
     subscriptionId: string,
     status: 'active' | 'paused' | 'error',
     errorMessage?: string
   ): Promise<void> {
-    const query = `
-      ALTER TABLE epcisSubscriptions
-      UPDATE status = {status:String}, errorMessage = {errorMessage:String}
-      WHERE queryName = {queryName:String} AND id = {id:String}
-    `;
-
-    await this.client.query({
-      query,
-      format: 'JSONEachRow',
-      query_params: {
-        queryName,
+    const query: ClickhouseQuery = {
+      query: `
+        ALTER TABLE epcisSubscriptions
+        UPDATE status = {status: String}, errorMessage = {errorMessage: String}
+        WHERE id = {id: String}
+      `,
+      format: 'JSONEachRow' as DataFormat,
+      parameters: {
         id: subscriptionId,
         status,
         errorMessage: errorMessage || ''
       }
-    });
+    };
+
+    await this.client.query(query);
   }
 }

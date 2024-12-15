@@ -1,9 +1,31 @@
 name = "epcis"
 main = "src/index.ts"
 compatibility_date = "2024-01-15"
+compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ENVIRONMENT = "production"
+
+# Resource limits
+[limits]
+cpu_ms = 50
+uploader_size_mb = 100
+
+# Rate limiting configuration
+[[rate_limits]]
+namespace_id = "epcis_capture"
+period = 60
+limit = 1000
+
+[[rate_limits]]
+namespace_id = "epcis_query"
+period = 60
+limit = 2000
+
+[[rate_limits]]
+namespace_id = "epcis_subscription"
+period = 60
+limit = 500
 
 [[kv_namespaces]]
 binding = "EPCIS_KV"

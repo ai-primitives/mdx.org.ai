@@ -2,47 +2,59 @@ import { MiddlewareHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { HonoEnv } from '../types';
 
-const RATE_LIMIT_WINDOW = 60; // 1 minute window
-const MAX_REQUESTS_PER_WINDOW = 100; // 100 requests per minute
-
-interface RateLimitInfo {
-  count: number;
-  timestamp: number;
-}
+const NAMESPACE_MAP = {
+  '/capture': 'epcis_capture',
+  '/queries': 'epcis_query',
+  '/subscriptions': 'epcis_subscription'
+} as const;
 
 export const rateLimitMiddleware: MiddlewareHandler<HonoEnv> = async (c, next) => {
-  const tenantId = c.req.header('X-Tenant-ID');
+  const path = new URL(c.req.url).pathname;
+  const namespace = Object.entries(NAMESPACE_MAP).find(([prefix]) => path.startsWith(prefix))?.[1];
 
-  if (!tenantId) {
-    throw new HTTPException(401, { message: 'Missing X-Tenant-ID header' });
+  if (!namespace) {
+    return next();
   }
 
-  const kv = c.env.EPCIS_KV;
-  const key = `rate_limit:${tenantId}:${Math.floor(Date.now() / (RATE_LIMIT_WINDOW * 1000))}`;
-
-  let info: RateLimitInfo | null = await kv.get(key, 'json');
-  const now = Date.now();
-
-  if (!info || (now - info.timestamp) >= RATE_LIMIT_WINDOW * 1000) {
-    info = { count: 0, timestamp: now };
+  const rateLimiter = c.env[namespace];
+  if (!rateLimiter) {
+    console.warn(`Rate limiter not found for namespace: ${namespace}`);
+    return next();
   }
 
-  if (info.count >= MAX_REQUESTS_PER_WINDOW) {
-    throw new HTTPException(429, {
-      message: 'Rate limit exceeded. Please try again later.',
-    });
+  try {
+    const { success, limit, remaining, reset } = await rateLimiter.limit(
+      `${c.req.method}:${path}`
+    );
+
+    // Set rate limit headers
+    c.header('RateLimit-Limit', limit.toString());
+    c.header('RateLimit-Remaining', remaining.toString());
+    c.header('RateLimit-Reset', reset.toString());
+
+    if (!success) {
+      return c.json(
+        {
+          type: 'epcisException:TooManyRequests',
+          title: 'Rate limit exceeded',
+          status: 429,
+          detail: `Rate limit of ${limit} requests per minute exceeded. Reset in ${reset} seconds.`
+        },
+        429
+      );
+    }
+
+    return next();
+  } catch (error) {
+    console.error('Rate limiting error:', error);
+    return c.json(
+      {
+        type: 'epcisException:ImplementationException',
+        title: 'Rate limiting error',
+        status: 500,
+        detail: error instanceof Error ? error.message : 'Unknown error'
+      },
+      500
+    );
   }
-
-  // Increment counter
-  info.count++;
-  await kv.put(key, JSON.stringify(info), {
-    expirationTtl: RATE_LIMIT_WINDOW * 2 // Double the window for safety
-  });
-
-  // Set rate limit headers
-  c.header('X-RateLimit-Limit', MAX_REQUESTS_PER_WINDOW.toString());
-  c.header('X-RateLimit-Remaining', (MAX_REQUESTS_PER_WINDOW - info.count).toString());
-  c.header('X-RateLimit-Reset', (info.timestamp + RATE_LIMIT_WINDOW * 1000).toString());
-
-  await next();
 };

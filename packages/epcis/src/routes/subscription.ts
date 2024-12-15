@@ -47,7 +47,7 @@ app.post('/:queryName/subscriptions', async (c: Context<HonoEnv>) => {
 
     // Get query definition
     const clickhouse = c.get('clickhouse');
-    const queryDef = await clickhouse.getQueryDefinition(queryName);
+    const queryDef = await clickhouse.getQuery(queryName);
 
     if (!queryDef) {
       return c.json(

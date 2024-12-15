@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { EPCISDocument, QueryDefinition, QueryParams } from '../types';
+import { webcrypto } from 'node:crypto';
+import { EPCISDocument, QueryDefinition, QueryParams, Subscription } from '../types';
 import { validateQueryDefinition } from '../validation/schema';
 import { handleWebSocketUpgrade } from '../websocket';
 import type { HonoEnv } from '../types';
@@ -72,7 +73,27 @@ app.get('/queries/:queryName/events', async (c) => {
 
   // Check for WebSocket upgrade request
   if (c.req.header('Upgrade')?.toLowerCase() === 'websocket') {
-    return handleWebSocketUpgrade(c, queryName, params);
+    const queryDef = await c.get('clickhouse').getQuery(queryName);
+    if (!queryDef) {
+      return c.json({
+        type: 'epcisException:NoSuchNameException',
+        title: 'Query not found',
+        status: 404
+      }, 404);
+    }
+
+    // Create subscription for WebSocket connection
+    const subscription: Subscription = {
+      id: webcrypto.randomUUID(),
+      queryName: queryDef.name,
+      destination: c.req.url,
+      stream: true,
+      reportIfEmpty: false,
+      createdAt: new Date().toISOString(),
+      status: 'active'
+    };
+
+    return handleWebSocketUpgrade(c, queryDef, subscription);
   }
 
   // Get query definition

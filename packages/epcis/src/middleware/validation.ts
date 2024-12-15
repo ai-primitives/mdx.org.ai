@@ -4,7 +4,7 @@ import type { EPCISEvent, HonoEnv } from '../types';
 
 const validateEvent = (event: EPCISEvent): { valid: boolean; reason?: string } => {
   // Required fields validation
-  if (!event.eventID || !event.eventType || !event.eventTime || !event.tenantId) {
+  if (!event.eventID || !event.type || !event.eventTime || !event.tenantId) {
     return { valid: false, reason: 'Missing required fields' };
   }
 
@@ -15,7 +15,7 @@ const validateEvent = (event: EPCISEvent): { valid: boolean; reason?: string } =
     'TransactionEvent',
     'TransformationEvent'
   ];
-  if (!validEventTypes.includes(event.eventType)) {
+  if (!validEventTypes.includes(event.type)) {
     return { valid: false, reason: 'Invalid event type' };
   }
 

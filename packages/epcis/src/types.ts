@@ -2,12 +2,26 @@ import { DataFormat } from '@clickhouse/client';
 import { ClickhouseClient } from './clickhouse';
 import type { Env as HonoBaseEnv } from 'hono/types';
 
+interface RateLimitResult {
+  success: boolean;
+  limit: number;
+  remaining: number;
+  reset: number;
+}
+
+export interface RateLimiter {
+  limit(key: string): Promise<RateLimitResult>;
+}
+
 export interface Env extends Record<string, unknown> {
   EPCIS_KV: KVNamespace;
   EPCIS_ANALYTICS: AnalyticsEngineDataset;
   CLICKHOUSE_URL: string;
   CLICKHOUSE_USER: string;
   CLICKHOUSE_PASSWORD: string;
+  epcis_capture: RateLimiter;
+  epcis_query: RateLimiter;
+  epcis_subscription: RateLimiter;
 }
 
 export interface Variables {
@@ -44,24 +58,7 @@ export interface EPCISQueryDocument {
 
 export interface QueryDefinition {
   name: string;
-  query: {
-    eventTypes?: string[];
-    GE_eventTime?: string;
-    LT_eventTime?: string;
-    GE_recordTime?: string;
-    LT_recordTime?: string;
-    EQ_action?: string[];
-    EQ_bizStep?: string[];
-    EQ_disposition?: string[];
-    EQ_readPoint?: string[];
-    EQ_bizLocation?: string[];
-    MATCH_epc?: string[];
-    MATCH_epcClass?: string[];
-    orderBy?: 'eventTime' | 'recordTime';
-    orderDirection?: 'ASC' | 'DESC';
-    eventCountLimit?: number;
-    maxEventCount?: number;
-  };
+  query: QueryParams;
 }
 
 export interface CaptureJob {
@@ -71,12 +68,14 @@ export interface CaptureJob {
   running: boolean;
   success: boolean;
   captureErrorBehaviour: 'rollback' | 'proceed';
-  errors?: Array<{
-    type: string;
-    title: string;
-    status: number;
-    detail?: string;
-  }>;
+  errors?: ProblemResponseBody[];
+}
+
+export interface ProblemResponseBody {
+  type: string;
+  title: string;
+  status: number;
+  detail?: string;
 }
 
 export interface EPCISEvent extends Record<string, unknown> {
@@ -85,18 +84,86 @@ export interface EPCISEvent extends Record<string, unknown> {
   action: 'ADD' | 'OBSERVE' | 'DELETE';
   bizStep?: string;
   disposition?: string;
+  persistentDisposition?: {
+    set?: string[];
+    unset?: string[];
+  };
   eventTime: string;
   eventTimeZoneOffset: string;
   readPoint?: { id: string };
-  businessLocation?: { id: string };
+  bizLocation?: { id: string };
+  errorDeclaration?: {
+    declarationTime: string;
+    reason?: string;
+    correctiveEventIDs?: string[];
+  };
+  sensorElementList?: SensorElement[];
   epcList?: string[];
-  quantityList?: Array<{
-    epcClass: string;
-    quantity: number;
+  quantityList?: QuantityElement[];
+  sourceList?: SourceDestElement[];
+  destinationList?: SourceDestElement[];
+  bizTransactionList?: BizTransaction[];
+  childEPCs?: string[];
+  parentID?: string;
+  inputEPCList?: string[];
+  outputEPCList?: string[];
+  transformationID?: string;
+  certificationInfo?: string[];
+  captureID?: string;
+  recordTime?: string;
+}
+
+export interface SensorElement {
+  sensorMetadata?: {
+    time?: string;
+    startTime?: string;
+    endTime?: string;
+    deviceID?: string;
+    deviceMetadata?: string;
+    rawData?: string;
+    dataProcessingMethod?: string;
+    bizRules?: string;
+  };
+  sensorReport: Array<{
+    type?: string;
+    deviceID?: string;
+    rawData?: string;
+    dataProcessingMethod?: string;
+    time?: string;
+    microorganism?: string;
+    chemicalSubstance?: string;
+    value?: number;
+    stringValue?: string;
+    booleanValue?: boolean;
+    hexBinaryValue?: string;
+    uriValue?: string;
+    minValue?: number;
+    maxValue?: number;
+    meanValue?: number;
+    percRank?: number;
+    percValue?: number;
     uom?: string;
+    sDev?: number;
+    deviceMetadata?: string;
+    coordinateReferenceSystem?: string;
   }>;
-  captureID?: string;  // Added for rollback support
-  recordTime?: string; // Added for event tracking
+}
+
+export interface QuantityElement {
+  epcClass: string;
+  quantity: number;
+  uom?: string;
+}
+
+export interface SourceDestElement {
+  source?: string;
+  destination?: string;
+  type: 'owning_party' | 'possessing_party' | 'location';
+}
+
+export interface BizTransaction {
+  type?: string;
+  bizTransaction: string;
 }
 
 export interface QueryParams {
@@ -108,10 +175,37 @@ export interface QueryParams {
   EQ_action?: string[];
   EQ_bizStep?: string[];
   EQ_disposition?: string[];
+  EQ_persistentDisposition_set?: string[];
+  EQ_persistentDisposition_unset?: string[];
   EQ_readPoint?: string[];
   EQ_bizLocation?: string[];
+  EQ_transformationID?: string[];
   MATCH_epc?: string[];
+  MATCH_parentID?: string[];
+  MATCH_inputEPC?: string[];
+  MATCH_outputEPC?: string[];
+  MATCH_anyEPC?: string[];
   MATCH_epcClass?: string[];
+  MATCH_inputEPCClass?: string[];
+  MATCH_outputEPCClass?: string[];
+  MATCH_anyEPCClass?: string[];
+  EQ_quantity?: number[];
+  GT_quantity?: number;
+  GE_quantity?: number;
+  LT_quantity?: number;
+  LE_quantity?: number;
+  EQ_eventID?: string[];
+  EXISTS_errorDeclaration?: boolean;
+  GE_errorDeclaration_Time?: string;
+  LT_errorDeclaration_Time?: string;
+  EQ_errorReason?: string[];
+  EQ_correctiveEventID?: string[];
+  EXISTS_sensorElementList?: boolean;
+  EQ_deviceID?: string[];
+  EQ_dataProcessingMethod?: string[];
+  EQ_microorganism?: string[];
+  EQ_chemicalSubstance?: string[];
+  EQ_bizRules?: string[];
   orderBy?: 'eventTime' | 'recordTime';
   orderDirection?: 'ASC' | 'DESC';
   eventCountLimit?: number;
