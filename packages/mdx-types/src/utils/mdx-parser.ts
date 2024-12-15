@@ -78,7 +78,15 @@ function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata | n
 export async function parseMDXFile(filePath: string): Promise<MDXParseResult> {
   try {
     console.log(`Reading file: ${filePath}`);
-    const content = await fs.readFile(filePath, 'utf-8');
+    const content = await fs.readFile(filePath, 'utf-8').catch(error => {
+      console.error(`Error reading file ${filePath}:`, {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      throw error;
+    });
 
     if (!content.trim()) {
       console.warn(`Empty file: ${filePath}`);

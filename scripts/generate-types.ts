@@ -5,7 +5,8 @@ const log = (...args: any[]) => debug && console.log(...args);
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise);
-  console.error('Reason:', reason);
+  console.error('Reason:', JSON.stringify(reason, null, 2));
+  console.error('Full error object:', reason);
   process.exit(1);
 });
 
