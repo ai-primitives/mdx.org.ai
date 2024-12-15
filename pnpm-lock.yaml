@@ -54,6 +54,9 @@ importers:
       remark-frontmatter:
         specifier: ^5.0.0
         version: 5.0.0
+      remark-mdx:
+        specifier: ^3.0.0
+        version: 3.1.0
       remark-parse:
         specifier: ^11.0.0
         version: 11.0.0
@@ -66,6 +69,9 @@ importers:
       unified:
         specifier: ^11.0.0
         version: 11.0.5
+      unist-util-visit:
+        specifier: ^5.0.0
+        version: 5.0.0
       yaml:
         specifier: ^2.6.1
         version: 2.6.1

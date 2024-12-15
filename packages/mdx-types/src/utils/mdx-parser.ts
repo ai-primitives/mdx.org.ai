@@ -1,11 +1,11 @@
 import { unified } from 'unified'
 import remarkParse from 'remark-parse'
 import remarkFrontmatter from 'remark-frontmatter'
+import remarkMdx from 'remark-mdx'
 import { parse as parseYaml } from 'yaml'
 import { promises as fs } from 'fs'
 import { join } from 'path'
-import { Root, Code, Yaml } from 'mdast'
-import { Node } from 'unist'
+import { visit } from 'unist-util-visit'
 
 export interface MDXMetadata {
   $type: string;
@@ -51,48 +51,36 @@ function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata {
   };
 }
 
-function extractExamples(tree: Root): string[] {
-  const examples: string[] = [];
-
-  function visit(node: Node): void {
-    if (node.type === 'code' && (node as Code).lang === 'mdx') {
-      examples.push((node as Code).value);
-    }
-
-    if ('children' in node) {
-      (node.children as Node[]).forEach(visit);
-    }
-  }
-
-  visit(tree);
-  return examples;
-}
-
 export async function parseMDXFile(filePath: string): Promise<MDXParseResult> {
   try {
     const content = await fs.readFile(filePath, 'utf-8');
 
     const processor = unified()
       .use(remarkParse)
-      .use(remarkFrontmatter, ['yaml']);
+      .use(remarkFrontmatter, ['yaml'])
+      .use(remarkMdx);
 
-    const tree = processor.parse(content) as Root;
+    const tree = await processor.parse(content);
 
     let frontmatter: Record<string, any> = {};
-    const firstNode = tree.children[0];
-
-    if (firstNode?.type === 'yaml') {
+    visit(tree, 'yaml', (node: any) => {
       try {
-        frontmatter = parseYaml((firstNode as Yaml).value);
-        if (!frontmatter || typeof frontmatter !== 'object') {
-          throw new Error('Frontmatter must be a valid YAML object');
-        }
+        frontmatter = parseYaml(node.value) || {};
       } catch (e) {
         throw new Error(`Failed to parse frontmatter in ${filePath}: ${(e as Error).message}`);
       }
+    });
+
+    if (Object.keys(frontmatter).length === 0) {
+      throw new Error(`No frontmatter found in ${filePath}`);
     }
 
-    const examples = extractExamples(tree);
+    const examples: string[] = [];
+    visit(tree, 'code', (node: any) => {
+      if (node.meta === 'example') {
+        examples.push(node.value);
+      }
+    });
 
     const contentWithoutFrontmatter = content
       .replace(/^---\n[\s\S]*?\n---\n/, '')
