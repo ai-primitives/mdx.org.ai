@@ -1,0 +1,14 @@
+diff --git a/dist/connection/node_base_connection.js b/dist/connection/node_base_connection.js
+index 123456..789012 100644
+--- a/dist/connection/node_base_connection.js
++++ b/dist/connection/node_base_connection.js
+@@ -5,9 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
+     return (mod && mod.__esModule) ? mod : { "default": mod };
+ };
+ Object.defineProperty(exports, "__esModule", { value: true });
+-const crypto_1 = __importDefault(require("crypto"));
+-const stream_1 = __importDefault(require("stream"));
+-const zlib_1 = __importDefault(require("zlib"));
++const crypto_1 = __importDefault(require("node:crypto"));
++const stream_1 = __importDefault(require("node:stream"));
++const zlib_1 = __importDefault(require("node:zlib"));
