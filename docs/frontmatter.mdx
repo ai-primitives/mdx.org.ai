@@ -1,0 +1,83 @@
+---
+$type: https://mdx.org.ai/Documentation
+title: MDX Frontmatter Structure
+description: Documentation for MDX frontmatter fields and schema.org compatibility
+---
+
+# MDX Frontmatter Structure
+
+MDX files in this repository use a standardized frontmatter structure that combines required fields for documentation and optional fields for schema.org compatibility.
+
+## Required Fields
+
+Every MDX file must include these fields in its frontmatter:
+
+- `$type`: The type of the MDX document (e.g., `https://mdx.org.ai/WebPage`)
+- `title`: A descriptive title for the document
+- `description`: A brief description of the document's purpose
+
+## Optional Schema.org Fields
+
+For schema.org compatibility, these fields can be included:
+
+- `$context`: The JSON-LD context (typically `https://schema.org`)
+- `$id`: Unique identifier for the document
+
+## Examples
+
+### Basic MDX File
+```yaml
+---
+$type: https://mdx.org.ai/WebPage
+title: Getting Started
+description: Guide to getting started with MDX
+---
+```
+
+### Schema.org Compatible MDX File
+```yaml
+---
+$type: https://mdx.org.ai/BlogPost
+title: Understanding MDX Frontmatter
+description: A comprehensive guide to MDX frontmatter structure
+$context: https://schema.org
+$id: https://example.com/blog/mdx-frontmatter
+---
+```
+
+### Package Documentation
+```yaml
+---
+$type: https://mdx.org.ai/Package
+title: MDX Parser
+description: Package for parsing MDX files with frontmatter support
+---
+```
+
+## Array Support
+
+The frontmatter structure supports array values for any field when needed:
+
+```yaml
+---
+$type: https://mdx.org.ai/Documentation
+title: MDX Arrays
+description: Example of array support in MDX frontmatter
+tags:
+  - documentation
+  - mdx
+  - frontmatter
+authors:
+  - name: John Doe
+    email: john@example.com
+  - name: Jane Smith
+    email: jane@example.com
+---
+```
+
+## Implementation Notes
+
+- All schema.org fields use the `$` prefix (e.g., `$type`, `$context`, `$id`)
+- The `yaml` package is used for parsing frontmatter
+- Fields are validated during build time
+- Type definitions are generated from frontmatter structure

@@ -1,0 +1,177 @@
+---
+$type: https://mdx.org.ai/Workflow
+$context: https://mdx.org.ai
+title: Workflow Type Definition
+description: The Workflow type represents a sequence of connected steps or stages in MDX that define a process or procedure. Workflows can model business processes, content approval flows, data processing pipelines, or interactive user journeys.
+---
+
+# Workflow Type
+
+## Overview
+
+The Workflow type represents a sequence of connected steps or stages in MDX that define a process or procedure. Workflows can model business processes, content approval flows, data processing pipelines, or interactive user journeys.
+
+## Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `name` | `string` | Yes | The name of the workflow |
+| `stages` | `object[]` | Yes | Array of workflow stages |
+| `transitions` | `object[]` | Yes | Rules for moving between stages |
+| `triggers` | `object[]` | No | Events that initiate workflow actions |
+| `conditions` | `object[]` | No | Rules that govern workflow progression |
+| `actions` | `object[]` | No | Tasks executed at each stage |
+| `status` | `string` | No | Current workflow state |
+| `metadata` | `object` | No | Additional workflow information |
+
+## Examples
+
+### Content Approval Workflow
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: Workflow
+name: ContentApproval
+stages:
+  - id: draft
+    name: Draft
+    roles: [author]
+  - id: review
+    name: Review
+    roles: [editor]
+  - id: publish
+    name: Published
+    roles: [admin]
+transitions:
+  - from: draft
+    to: review
+    condition: contentComplete
+  - from: review
+    to: publish
+    condition: approvedByEditor
+---
+
+export const ContentWorkflow = ({ content, stage }) => (
+  <Workflow name="ContentApproval" currentStage={stage}>
+    <Stage id="draft">
+      <Editor content={content} />
+      <ReviewButton />
+    </Stage>
+    <Stage id="review">
+      <ReviewForm />
+      <ApproveButton />
+    </Stage>
+    <Stage id="publish">
+      <PublishControls />
+    </Stage>
+  </Workflow>
+)
+```
+
+### Data Processing Pipeline
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: Workflow
+name: DataPipeline
+stages:
+  - id: input
+    name: Data Input
+  - id: validate
+    name: Validation
+  - id: transform
+    name: Transformation
+  - id: output
+    name: Results
+triggers:
+  - event: fileUpload
+    action: startValidation
+  - event: validationComplete
+    action: startTransformation
+---
+
+export const DataWorkflow = ({ data }) => (
+  <Workflow name="DataPipeline" data={data}>
+    <Stage id="input">
+      <FileUpload onComplete={startValidation} />
+    </Stage>
+    <Stage id="validate">
+      <DataValidator schema={schema} />
+    </Stage>
+    <Stage id="transform">
+      <DataTransformer rules={rules} />
+    </Stage>
+    <Stage id="output">
+      <ResultsViewer />
+      <DownloadButton />
+    </Stage>
+  </Workflow>
+)
+```
+
+### Interactive Tutorial Flow
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: Workflow
+name: TutorialFlow
+stages:
+  - id: intro
+    name: Introduction
+  - id: lesson
+    name: Main Lesson
+  - id: practice
+    name: Practice
+  - id: quiz
+    name: Assessment
+conditions:
+  - id: lessonComplete
+    check: score >= 80
+metadata:
+  difficulty: intermediate
+  duration: 30
+---
+
+export const TutorialWorkflow = ({ user }) => (
+  <Workflow name="TutorialFlow" user={user}>
+    <Stage id="intro">
+      <Welcome />
+      <Objectives />
+    </Stage>
+    <Stage id="lesson">
+      <LessonContent />
+      <Interactive />
+    </Stage>
+    <Stage id="practice">
+      <Exercises />
+      <Feedback />
+    </Stage>
+    <Stage id="quiz">
+      <Assessment />
+      <Results />
+    </Stage>
+  </Workflow>
+)
+```
+
+## Best Practices
+
+1. Define clear stage transitions
+2. Implement proper error handling
+3. Include progress tracking
+4. Add validation at each stage
+5. Maintain audit trails
+6. Support workflow versioning
+
+## Related Types
+- [Function](https://mdx.org.ai/Function)
+- [Component](https://mdx.org.ai/Component)
+- [App](https://mdx.org.ai/App)
+
+## See Also
+- [MDX Workflow Library](https://mdx.org.ai/packages/mdxe)
+- [Workflow Development Guide](https://mdx.org.ai/guides/workflows)
+- [State Management](https://mdx.org.ai/guides/state)

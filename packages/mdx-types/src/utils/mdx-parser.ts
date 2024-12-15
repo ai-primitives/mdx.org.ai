@@ -1,93 +1,171 @@
 import { unified } from 'unified'
 import remarkParse from 'remark-parse'
 import remarkFrontmatter from 'remark-frontmatter'
+import remarkMdx from 'remark-mdx'
 import { parse as parseYaml } from 'yaml'
-import { readFileSync } from 'fs'
+import { promises as fs } from 'fs'
 import { join } from 'path'
-import { Root, Code, Yaml } from 'mdast'
-import { Node } from 'unist'
+import { visit } from 'unist-util-visit'
 
 export interface MDXMetadata {
-  type: string;
-  id?: string;
-  context?: string;
+  $type: string;
+  title: string;
+  description: string;
+  $context?: string;
+  $id?: string;
   [key: string]: any;
 }
 
-interface MDXParseResult {
-  metadata: MDXMetadata;
+export interface MDXParseResult {
+  metadata: MDXMetadata | null;
   content: string;
   examples: string[];
 }
 
-function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata {
-  const type = frontmatter['$type'] || frontmatter['@type'] || '';
-  const id = frontmatter['$id'] || frontmatter['@id'] || undefined;
-  const context = frontmatter['@context'] || 'https://mdx.org.ai';
-
-  const { $type, '@type': atType, $id, '@id': atId, '@context': atContext, ...rest } = frontmatter;
-
-  return {
-    type,
-    ...(id && { id }),
-    context,
-    ...rest
-  };
+export interface ValidMDXParseResult extends MDXParseResult {
+  metadata: MDXMetadata;
 }
 
-function extractExamples(tree: Root): string[] {
-  const examples: string[] = [];
-
-  function visit(node: Node): void {
-    if (node.type === 'code' && (node as Code).lang === 'mdx') {
-      examples.push((node as Code).value);
-    }
-
-    if ('children' in node) {
-      (node.children as Node[]).forEach(visit);
-    }
-  }
-
-  visit(tree);
-  return examples;
+export function isValidMetadata(metadata: unknown): metadata is MDXMetadata {
+  if (!metadata || typeof metadata !== 'object') return false;
+  const m = metadata as Record<string, unknown>;
+  return (
+    typeof m.$type === 'string' &&
+    typeof m.title === 'string' &&
+    typeof m.description === 'string'
+  );
 }
 
-export function parseMDXFile(filePath: string): MDXParseResult {
+function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata | null {
   try {
-    const content = readFileSync(filePath, 'utf-8');
+    const {
+      $type, '@type': atType,
+      $id, '@id': atId,
+      $context: dollarContext,
+      '@context': atContext,
+      title,
+      description,
+      ...rest
+    } = frontmatter;
+
+    const normalizedType = ($type || atType || '').replace(/^https:\/\/mdx\.org\.ai\//, '');
+
+    if (!normalizedType) {
+      console.warn('Missing required field: $type or @type');
+      return null;
+    }
+
+    if (!title) {
+      console.warn('Missing required field: title');
+      return null;
+    }
+
+    if (!description) {
+      console.warn('Missing required field: description');
+      return null;
+    }
+
+    return {
+      $type: normalizedType,
+      title,
+      description,
+      $id: $id || atId,
+      $context: dollarContext || atContext,
+      ...rest
+    };
+  } catch (error) {
+    console.error('Error normalizing frontmatter:', error);
+    return null;
+  }
+}
+
+export async function parseMDXFile(contentOrPath: string, isPath: boolean = false): Promise<MDXParseResult> {
+  try {
+    let content: string;
+    if (isPath) {
+      console.log(`Reading file: ${contentOrPath}`);
+      try {
+        content = await fs.readFile(contentOrPath, 'utf-8');
+      } catch (error) {
+        console.error(`Error reading file ${contentOrPath}:`, {
+          name: error instanceof Error ? error.name : 'Unknown',
+          message: error instanceof Error ? error.message : String(error),
+          code: (error as any)?.code,
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        return { metadata: null, content: '', examples: [] };
+      }
+    } else {
+      content = contentOrPath;
+    }
+
+    if (!content.trim()) {
+      console.warn(`Empty content${isPath ? ` in file: ${contentOrPath}` : ''}`);
+      return { metadata: null, content: '', examples: [] };
+    }
 
     const processor = unified()
       .use(remarkParse)
-      .use(remarkFrontmatter, ['yaml']);
+      .use(remarkFrontmatter, ['yaml'])
+      .use(remarkMdx);
 
-    const tree = processor.parse(content) as Root;
-
-    let frontmatter: Record<string, any> = {};
-    const firstNode = tree.children[0];
-
-    if (firstNode?.type === 'yaml') {
-      try {
-        frontmatter = parseYaml((firstNode as Yaml).value);
-        if (!frontmatter || typeof frontmatter !== 'object') {
-          throw new Error('Frontmatter must be a valid YAML object');
-        }
-      } catch (e) {
-        throw new Error(`Failed to parse frontmatter in ${filePath}: ${e}`);
-      }
+    console.log(`Parsing MDX content${isPath ? ` for ${contentOrPath}` : ''}`);
+    let tree;
+    try {
+      tree = await processor.parse(content);
+    } catch (error) {
+      console.error(`Error parsing MDX${isPath ? ` in ${contentOrPath}` : ''}:`, error);
+      return { metadata: null, content: '', examples: [] };
     }
 
-    const examples = extractExamples(tree);
+    let frontmatterNode: any = null;
+    let examples: string[] = [];
 
-    const contentWithoutFrontmatter = content
-      .replace(/^---\n[\s\S]*?\n---\n/, '')
-      .trim();
+    visit(tree, 'yaml', (node) => {
+      frontmatterNode = node;
+    });
 
-    return {
-      metadata: normalizeFrontmatter(frontmatter),
-      content: contentWithoutFrontmatter,
-      examples
-    };
-  } catch (e) {
-    throw new Error(`Failed to parse MDX file ${filePath}: ${e}`);
+    if (!frontmatterNode) {
+      console.warn(`No frontmatter found${isPath ? ` in ${contentOrPath}` : ''}`);
+      return { metadata: null, content, examples };
+    }
+
+    console.log(`Parsing frontmatter${isPath ? ` for ${contentOrPath}` : ''}`);
+    try {
+      const frontmatter = parseYaml(frontmatterNode.value);
+      if (!frontmatter || typeof frontmatter !== 'object') {
+        console.warn('Invalid YAML: expected an object');
+        return { metadata: null, content, examples };
+      }
+
+      const metadata = normalizeFrontmatter(frontmatter);
+
+      if (!metadata) {
+        console.warn(`Invalid frontmatter${isPath ? ` in ${contentOrPath}` : ''}: missing required fields`);
+        return { metadata: null, content, examples };
+      }
+
+      const contentWithoutFrontmatter = content.replace(/---\n[\s\S]*?\n---/, '').trim();
+
+      console.log(`Successfully parsed${isPath ? ` ${contentOrPath}` : ' content'}`);
+      return {
+        metadata,
+        content: contentWithoutFrontmatter,
+        examples
+      };
+    } catch (error) {
+      console.error(`Error parsing frontmatter${isPath ? ` in ${contentOrPath}` : ''}:`, {
+        error: error instanceof Error ? error.message : String(error),
+        file: contentOrPath,
+        frontmatter: frontmatterNode.value
+      });
+      return { metadata: null, content, examples };
+    }
+  } catch (error) {
+    console.error(`Error in parseMDXFile${isPath ? ` for ${contentOrPath}` : ''}:`, {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    return { metadata: null, content: '', examples: [] };
   }
 }

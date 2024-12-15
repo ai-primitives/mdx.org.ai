@@ -1,8 +1,8 @@
 ---
-"@id": https://mdx.org.ai/Function
-"@context": https://mdx.org.ai
-"@type": TypeDefinition
+$type: https://mdx.org.ai/Function
+$context: https://mdx.org.ai
 title: Function Type Definition
+description: The Function type represents a reusable piece of logic in MDX that can process data, handle events, or perform computations. Functions can be used within components, as utilities, or as standalone features to enhance MDX content with dynamic behavior.
 ---
 
 # Function Type
@@ -30,8 +30,8 @@ The Function type represents a reusable piece of logic in MDX that can process d
 
 ```mdx
 ---
-"@context": https://mdx.org.ai
-"@type": Function
+$context: https://mdx.org.ai
+$type: Function
 name: processMarkdown
 parameters:
   - name: content
@@ -63,8 +63,8 @@ export const processMarkdown = (content, options = {}) => {
 
 ```mdx
 ---
-"@context": https://mdx.org.ai
-"@type": Function
+$context: https://mdx.org.ai
+$type: Function
 name: fetchData
 parameters:
   - name: endpoint
@@ -102,8 +102,8 @@ export const fetchData = async (endpoint, query = {}) => {
 
 ```mdx
 ---
-"@context": https://mdx.org.ai
-"@type": Function
+$context: https://mdx.org.ai
+$type: Function
 name: handleInteraction
 parameters:
   - name: event

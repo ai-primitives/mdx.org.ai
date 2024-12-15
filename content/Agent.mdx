@@ -1,8 +1,8 @@
 ---
-"@id": https://mdx.org.ai/Agent
-"@context": https://mdx.org.ai
-"@type": TypeDefinition
+$type: https://mdx.org.ai/Agent
+$context: https://mdx.org.ai
 title: Agent Type Definition
+description: The Agent type represents an autonomous software entity capable of performing tasks, processing information, or interacting with users within an MDX context.
 ---
 
 # Agent Type
@@ -30,8 +30,8 @@ The Agent type represents an autonomous software entity capable of performing ta
 
 ```mdx
 ---
-"@context": https://mdx.org.ai
-"@type": Agent
+$context: https://mdx.org.ai
+$type: Agent
 name: Documentation Helper
 description: Assists users with MDX documentation and formatting
 capabilities:
@@ -51,8 +51,8 @@ capabilities:
 
 ```mdx
 ---
-"@context": https://mdx.org.ai
-"@type": Agent
+$context: https://mdx.org.ai
+$type: Agent
 name: Code Explainer
 description: Explains code snippets and provides interactive examples
 model: gpt-4
@@ -63,10 +63,10 @@ capabilities:
 ---
 
 <CodeExplainerAgent>
-  ```javascript
-  const greeting = 'Hello, MDX!'
-  console.log(greeting)
-  ```
+  <code>
+    const greeting = 'Hello, MDX!'
+    console.log(greeting)
+  </code>
 </CodeExplainerAgent>
 ```
 
@@ -74,8 +74,8 @@ capabilities:
 
 ```mdx
 ---
-"@context": https://mdx.org.ai
-"@type": Agent
+$context: https://mdx.org.ai
+$type: Agent
 name: Content Processor
 description: Processes and transforms MDX content
 capabilities:

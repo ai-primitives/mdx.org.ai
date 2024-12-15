@@ -1,8 +1,8 @@
 ---
-"@id": https://mdx.org.ai/API
-"@context": https://mdx.org.ai
-"@type": TypeDefinition
+$type: https://mdx.org.ai/API
+$context: https://mdx.org.ai
 title: API Type Definition
+description: The API type in MDX enables the creation of HTTP endpoints directly within MDX files using web standards and the WHATWG Fetch API, allowing seamless integration of API functionality with documentation and interactive components.
 ---
 
 # API Type
@@ -15,7 +15,7 @@ The API type in MDX enables the creation of HTTP endpoints directly within MDX f
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `@id` | `string` | Yes | The base URL for the API endpoint |
+| `$id` | `string` | Yes | The base URL for the API endpoint |
 | `methods` | `string[]` | No | Supported HTTP methods (GET, POST, PUT, DELETE, etc.) |
 | `headers` | `object` | No | Default headers for API requests |
 | `middleware` | `function[]` | No | Array of middleware functions to process requests |
@@ -31,6 +31,8 @@ You can export specific HTTP method handlers:
 ```mdx
 ---
 $type: https://mdx.org.ai/API
+title: API
+description: Example API endpoint implementation
 ---
 
 export const fetch = request => Response.json({ hello: 'world' })
@@ -56,8 +58,8 @@ export const POST = async request => {
 
 ```mdx
 ---
-"@id": 'https://api.example.com/protected'
-"@type": 'https://mdx.org.ai/API'
+$id: 'https://api.example.com/protected'
+$type: 'https://mdx.org.ai/API'
 auth:
   type: 'bearer'
   required: true
@@ -77,8 +79,8 @@ export const GET = async request => {
 
 ```mdx
 ---
-"@id": 'https://api.example.com/data'
-"@type": 'https://mdx.org.ai/API'
+$id: 'https://api.example.com/data'
+$type: 'https://mdx.org.ai/API'
 cors:
   origin: '*'
   methods: ['GET', 'POST']
@@ -105,7 +107,7 @@ export const GET = async request => {
 
 ## Best Practices
 
-1. Always specify an `@id` for your API endpoints
+1. Always specify a `$id` for your API endpoints
 2. Implement proper error handling and status codes
 3. Use middleware for cross-cutting concerns
 4. Document expected request/response formats

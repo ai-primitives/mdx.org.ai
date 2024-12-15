@@ -1,8 +1,8 @@
 ---
-"@id": https://mdx.org.ai/Workflow
-"@context": https://mdx.org.ai
-"@type": TypeDefinition
+$type: https://mdx.org.ai/Workflow
+$context: https://mdx.org.ai
 title: Workflow Type Definition
+description: The Workflow type represents a sequence of connected steps or stages in MDX that define a process or procedure. Workflows can model business processes, content approval flows, data processing pipelines, or interactive user journeys.
 ---
 
 # Workflow Type
@@ -30,8 +30,8 @@ The Workflow type represents a sequence of connected steps or stages in MDX that
 
 ```mdx
 ---
-"@context": https://mdx.org.ai
-"@type": Workflow
+$context: https://mdx.org.ai
+$type: Workflow
 name: ContentApproval
 stages:
   - id: draft
@@ -73,8 +73,8 @@ export const ContentWorkflow = ({ content, stage }) => (
 
 ```mdx
 ---
-"@context": https://mdx.org.ai
-"@type": Workflow
+$context: https://mdx.org.ai
+$type: Workflow
 name: DataPipeline
 stages:
   - id: input
@@ -115,8 +115,8 @@ export const DataWorkflow = ({ data }) => (
 
 ```mdx
 ---
-"@context": https://mdx.org.ai
-"@type": Workflow
+$context: https://mdx.org.ai
+$type: Workflow
 name: TutorialFlow
 stages:
   - id: intro
