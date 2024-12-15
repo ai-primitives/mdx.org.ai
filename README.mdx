@@ -3,11 +3,72 @@ $id: https://mdx.org.ai
 $type: https://mdx.org.ai/Documentation
 ---
 
+[![npm version](https://badge.fury.io/js/mdxld.svg)](https://badge.fury.io/js/mdxld)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 # mdx.org.ai
 
-[mdx.org.ai](https://mdx.org.ai) provides @context for MDX files to have a specific @type that represents what it is. 
+[mdx.org.ai](https://mdx.org.ai) provides $context for MDX files to have a specific $type that represents what it is.
 
-For example, a @type could be:
+## mdxld
+
+`mdxld` is an ESM-native library for parsing and serializing MDX with YAML-LD frontmatter, functioning similarly to gray-matter but with enhanced YAML-LD support.
+
+### Key Features
+
+- ESM-native implementation
+- YAML parsing via the `yaml` package
+- Support for YAML-LD with both @ and $ prefix properties
+- Properties starting with @ or $ are returned on the root object
+- TypeScript-first with full type definitions
+
+### Usage
+
+```typescript
+import { mdxld } from 'mdxld'
+
+const mdx = `---
+$type: BlogPost
+$id: https://example.com/post
+title: My First Post
+tags: ['mdx', 'yaml-ld']
+---
+
+# My First Post
+
+Content goes here...
+`
+
+const result = mdxld(mdx)
+console.log(result)
+/*
+{
+  type: 'BlogPost',
+  id: 'https://example.com/post',
+  data: {
+    title: 'My First Post',
+    tags: ['mdx', 'yaml-ld']
+  },
+  content: '# My First Post\n\nContent goes here...'
+}
+*/
+```
+
+### TypeScript Interface
+
+```typescript
+type MDXLD = {
+  id?: string
+  context?: string
+  type?: string
+  graph?: any
+  data: Record<string, any>
+  content: string
+  [key: string]: any // For additional YAML-LD properties
+}
+```
+
+For example, a $type could be:
 
  - Page
  - Component
@@ -21,3 +82,7 @@ For example, a @type could be:
  - Workflow
  - Agent
  - Tool
+
+## Dependencies
+
+- yaml: ^2.3.4 - YAML parsing and serialization
