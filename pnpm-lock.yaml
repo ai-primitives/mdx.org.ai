@@ -39,6 +39,9 @@ importers:
         specifier: ^2.6.1
         version: 2.6.1
     devDependencies:
+      '@mdx-js/mdx':
+        specifier: ^3.1.0
+        version: 3.1.0(acorn@8.14.0)
       '@types/glob':
         specifier: ^8.1.0
         version: 8.1.0
