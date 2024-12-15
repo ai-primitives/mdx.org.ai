@@ -108,7 +108,7 @@ async function main() {
       'package',
       'packages/mdx-types/content/types'
     ].map(dir => {
-      const fullPath = join(process.cwd(), dir);
+      const fullPath = join(__dirname, '..', dir);
       if (!existsSync(fullPath)) {
         log(`Warning: Directory ${fullPath} does not exist`);
         return null;
