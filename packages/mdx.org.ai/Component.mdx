@@ -1,0 +1,144 @@
+---
+$type: https://mdx.org.ai/Component
+$context: https://mdx.org.ai
+title: Component Type Definition
+description: The Component type represents a reusable UI element in MDX that can combine Markdown content with JSX functionality. Components can range from simple styled elements to complex interactive features with state management and lifecycle methods.
+---
+
+# Component Type
+
+## Overview
+
+The Component type represents a reusable UI element in MDX that can combine Markdown content with JSX functionality. Components can range from simple styled elements to complex interactive features with state management and lifecycle methods.
+
+## Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `name` | `string` | Yes | The name of the component |
+| `props` | `object` | No | Component properties and their types |
+| `children` | `ReactNode` | No | Child elements or content |
+| `style` | `object` | No | Component styling |
+| `className` | `string` | No | CSS class names |
+| `events` | `object` | No | Event handlers |
+| `state` | `object` | No | Internal component state |
+| `context` | `object` | No | Context dependencies |
+
+## Examples
+
+### Basic Markdown Component
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: Component
+name: InfoBox
+props:
+  type: string
+  title: string
+---
+
+export const InfoBox = ({ type = 'info', title, children }) => (
+  <div className={`info-box ${type}`}>
+    <h3>{title}</h3>
+    <div className="content">
+      {children}
+    </div>
+  </div>
+)
+
+<InfoBox type="warning" title="Important Note">
+  This is a **markdown-enabled** component with _styling_.
+</InfoBox>
+```
+
+### Interactive Component
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: Component
+name: CodePlayground
+props:
+  language: string
+  initialCode: string
+---
+
+export const CodePlayground = ({ language, initialCode }) => {
+  const [code, setCode] = useState(initialCode)
+  const [output, setOutput] = useState('')
+
+  return (
+    <div className="playground">
+      <Editor
+        value={code}
+        onChange={setCode}
+        language={language}
+      />
+      <Preview code={code} />
+      <Console output={output} />
+    </div>
+  )
+}
+
+<CodePlayground
+  language="javascript"
+  initialCode="console.log('Hello MDX!')"
+/>
+```
+
+### Data-Driven Component
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: Component
+name: DataTable
+props:
+  data: array
+  columns: array
+  sortable: boolean
+---
+
+export const DataTable = ({ data, columns, sortable }) => {
+  const [sortedData, setSortedData] = useState(data)
+  const [sortConfig, setSortConfig] = useState(null)
+
+  return (
+    <table>
+      <TableHeader
+        columns={columns}
+        sortable={sortable}
+        onSort={handleSort}
+      />
+      <TableBody data={sortedData} />
+      <TableFooter />
+    </table>
+  )
+}
+
+<DataTable
+  data={users}
+  columns={['name', 'email', 'role']}
+  sortable={true}
+/>
+```
+
+## Best Practices
+
+1. Use TypeScript for type safety
+2. Implement proper prop validation
+3. Follow React best practices
+4. Keep components focused and reusable
+5. Document props and usage
+6. Handle loading and error states
+
+## Related Types
+- [Function](https://mdx.org.ai/Function)
+- [App](https://mdx.org.ai/App)
+- [Blog](https://mdx.org.ai/Blog)
+
+## See Also
+- [MDX Component Library](https://mdx.org.ai/packages/mdxe)
+- [Component Development Guide](https://mdx.org.ai/guides/components)
+- [React Integration](https://mdx.org.ai/guides/react)

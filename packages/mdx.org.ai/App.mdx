@@ -1,0 +1,124 @@
+---
+$type: https://mdx.org.ai/App
+$context: https://mdx.org.ai
+title: App Type Definition
+description: The App type represents a complete MDX application that can include multiple pages, components, and functionality. Apps can range from simple documentation sites to complex interactive applications, all built using MDX's capabilities.
+---
+
+# App Type
+
+## Overview
+
+The App type represents a complete MDX application that can include multiple pages, components, and functionality. Apps can range from simple documentation sites to complex interactive applications, all built using MDX's capabilities.
+
+## Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `name` | `string` | Yes | The name of the application |
+| `description` | `string` | Yes | A brief description of the app's purpose |
+| `version` | `string` | No | App version following semver |
+| `routes` | `object[]` | No | Array of route configurations |
+| `components` | `object[]` | No | Array of component definitions |
+| `config` | `object` | No | Application configuration settings |
+| `dependencies` | `object` | No | External dependencies and versions |
+| `theme` | `object` | No | Theme and styling configuration |
+
+## Examples
+
+### Basic Documentation App
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: App
+name: MDX Documentation
+description: Documentation site built with MDX
+version: 1.0.0
+routes:
+  - path: /
+    component: Home
+  - path: /docs
+    component: Documentation
+  - path: /examples
+    component: Examples
+---
+
+<App>
+  <Navigation />
+  <main>
+    <Outlet />
+  </main>
+  <Footer />
+</App>
+```
+
+### Interactive Learning App
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: App
+name: MDX Tutorial
+description: Interactive MDX learning platform
+components:
+  - CodeEditor
+  - Preview
+  - Exercises
+theme:
+  primary: '#4A90E2'
+  secondary: '#F5A623'
+---
+
+<App>
+  <Layout>
+    <CodeEditor />
+    <Preview />
+    <ExercisePanel />
+  </Layout>
+</App>
+```
+
+### API Documentation App
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: App
+name: API Explorer
+description: Interactive API documentation
+config:
+  baseUrl: 'https://api.example.com'
+  auth: true
+dependencies:
+  swagger-ui: '^5.0.0'
+  axios: '^1.0.0'
+---
+
+<App>
+  <APIExplorer>
+    <Authentication />
+    <Endpoints />
+    <ResponseViewer />
+  </APIExplorer>
+</App>
+```
+
+## Best Practices
+
+1. Organize routes and components logically
+2. Implement proper error boundaries
+3. Use consistent theming throughout the app
+4. Document configuration options
+5. Include proper type definitions
+6. Handle loading and error states
+
+## Related Types
+- [Component](https://mdx.org.ai/Component)
+- [Function](https://mdx.org.ai/Function)
+- [API](https://mdx.org.ai/API)
+
+## See Also
+- [MDX App Components](https://mdx.org.ai/packages/mdxe)
+- [App Implementation Guide](https://mdx.org.ai/guides/apps)
+- [Example Applications](https://mdx.org.ai/examples/apps)

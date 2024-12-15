@@ -1,0 +1,127 @@
+---
+$type: https://mdx.org.ai/Assistant
+$context: https://mdx.org.ai
+title: Assistant Type Definition
+description: The Assistant type represents an AI-powered helper that can interact with users through MDX content. Assistants can provide contextual help, answer questions, and perform tasks within the MDX environment.
+---
+
+# Assistant Type
+
+## Overview
+
+The Assistant type represents an AI-powered helper that can interact with users through MDX content. Assistants can provide contextual help, answer questions, and perform tasks within the MDX environment.
+
+## Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `name` | `string` | Yes | The name of the assistant |
+| `description` | `string` | Yes | A brief description of the assistant's purpose |
+| `capabilities` | `string[]` | Yes | List of tasks the assistant can perform |
+| `model` | `string` | No | The underlying AI model being used |
+| `context` | `object` | No | Additional context for the assistant |
+| `parameters` | `object` | No | Configuration parameters |
+| `memory` | `object` | No | Conversation history and state |
+| `tools` | `object[]` | No | Array of tools the assistant can use |
+
+## Examples
+
+### Documentation Helper Assistant
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: Assistant
+name: DocHelper
+description: Documentation assistance and code explanation
+capabilities:
+  - explain_code
+  - answer_questions
+  - suggest_improvements
+model: gpt-4
+parameters:
+  temperature: 0.7
+  max_tokens: 2048
+---
+
+<Assistant>
+  <Context>
+    <CodeBlock language="typescript" />
+    <Documentation />
+  </Context>
+  <Response format="markdown" />
+</Assistant>
+```
+
+### Code Review Assistant
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: Assistant
+name: CodeReviewer
+description: Automated code review and suggestions
+capabilities:
+  - review_code
+  - find_bugs
+  - suggest_optimizations
+tools:
+  - linter
+  - type_checker
+  - security_scanner
+parameters:
+  review_depth: 'detailed'
+---
+
+<Assistant>
+  <GitDiff />
+  <ReviewComments />
+  <Suggestions />
+</Assistant>
+```
+
+### Interactive Learning Assistant
+
+```mdx
+---
+$context: https://mdx.org.ai
+$type: Assistant
+name: TutorBot
+description: Interactive programming tutor
+capabilities:
+  - explain_concepts
+  - provide_examples
+  - quiz_user
+memory:
+  retain_questions: true
+  track_progress: true
+context:
+  difficulty: 'adaptive'
+  learning_path: 'javascript'
+---
+
+<Assistant>
+  <LessonContent />
+  <InteractiveExercise />
+  <ProgressTracker />
+</Assistant>
+```
+
+## Best Practices
+
+1. Define clear and specific capabilities
+2. Provide appropriate context for the task
+3. Configure memory management for conversations
+4. Set appropriate model parameters
+5. Include error handling
+6. Implement rate limiting and quotas
+
+## Related Types
+- [AI](https://mdx.org.ai/AI)
+- [Function](https://mdx.org.ai/Function)
+- [Component](https://mdx.org.ai/Component)
+
+## See Also
+- [MDX AI Components](https://mdx.org.ai/packages/mdxai)
+- [Assistant Implementation Guide](https://mdx.org.ai/guides/assistants)
+- [AI Integration Examples](https://mdx.org.ai/examples/ai)

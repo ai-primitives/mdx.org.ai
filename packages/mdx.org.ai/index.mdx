@@ -1,0 +1,241 @@
+---
+$type: https://mdx.org.ai/WebPage
+title: Why MDX?
+description: A comprehensive guide to MDX features including Markdown, YAML
+  frontmatter, JSON-LD, and JSX/React components
+$context: https://schema.org
+
+---
+
+import { Cards } from 'nextra/components'
+import { SiMarkdown, SiYaml, SiJson, SiJavascript, SiReact } from 'react-icons/si'
+import { HiOutlineSparkles } from 'react-icons/hi2'
+
+# Why MDX?
+
+MDX brings together unstructured content via Markdown, typed schemas via JSON-LD, structured data via YAML frontmatter,
+executable code via JavaScript/TypeScript, and UI components via JSX/React.
+
+<Cards num={5}>
+  <Cards.Card icon={<HiOutlineSparkles />} title='Generative AI' href='#generative-ai'/>
+  <Cards.Card icon={<SiMarkdown />} title='Markdown' href='#markdown'/>
+  <Cards.Card icon={<SiYaml />} title='YAML' href='#yaml'/>
+  <Cards.Card icon={<SiJson />} title='JSON-LD' href='#json-ld'/>
+  <Cards.Card icon={<SiJavascript />} title='Javascript / Typescript' href='#javascript-typescript'/>
+  <Cards.Card icon={<SiReact />} title='JSX / React' href='#jsx-react'/>
+</Cards>
+
+
+## Generative AI
+
+Most of the internet content that Large Language Models are trained on is in Markdown. Anytime you interact with ChatGPT or any other LLM,
+it responds using Markdown syntax to represent the rich formatting of the content.
+
+## Markdown
+
+MDX is fully-compatible extension to Markdown, and Markdown is the native language of Large Language Models. Anytime you interact with ChatGPT or any other LLM,
+it responds using Markdown to represent the rich formatting of the content.
+
+## JSON-LD
+
+JSON-LD is a lightweight linked data format that allows you to describe your data in a way that is both human-readable and machine-readable.
+
+```markdown
+---
+$id: https://example.com
+$context: https://schema.org
+$type: WebPage
+title: Example Domain
+description: This domain is for use in illustrative examples in documents
+---
+# Example Domain
+
+This domain is for use in illustrative examples in documents. You may use this
+domain in literature without prior coordination or asking for permission.
+
+[More information...](https://www.iana.org/domains/example)
+
+```
+
+While the most common $context for JSON-LD is [schema.org](https://schema.org), you can use any $context that you want, and [mdx.org.ai](https://mdx.org.ai)
+was created to extend [schema.org](https://schema.org) to provide a $context for MDX file types. For example:
+
+```markdown
+---
+$id: https://example.com
+$context: https://mdx.org.ai
+$type: WebPage
+title: Example Domain
+description: Example domain demonstrating MDX.org.ai context usage
+---
+```
+
+## YAML
+
+YAML is a human-friendly data serialization language that is fully compatible with JSON. YAML frontmatter is a simple way to add structured data to your Markdown files.
+
+```markdown
+---
+$type: https://mdx.org.ai/SlideDeck
+title: Example Slide Deck
+description: A sample slide deck demonstrating MDX capabilities
+---
+```
+
+## JavaScript / TypeScript
+
+MDX supports embedding executable JavaScript and TypeScript code directly in your content, enabling dynamic and interactive documentation:
+
+### Runtime Execution
+- Dynamic content generation and transformation
+- Data processing and calculations
+- API interactions and data fetching
+- Custom MDX component logic
+
+### TypeScript Support
+- Type-safe MDX components and interfaces
+- Full IDE support with Intellisense
+- Static type checking for content
+- Type-safe imports and exports
+
+### Examples
+
+```tsx
+// Dynamic content generation
+export function CurrentTime() {
+  const [time, setTime] = React.useState(new Date())
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return <span>{time.toLocaleTimeString()}</span>
+}
+
+// Data processing
+export function DataTable({ data }) {
+  return (
+    <table>
+      <thead>
+        <tr>{Object.keys(data[0]).map(key => <th key={key}>{key}</th>)}</tr>
+      </thead>
+      <tbody>
+        {data.map((row, i) => (
+          <tr key={i}>
+            {Object.values(row).map((value, j) => <td key={j}>{value}</td>)}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+// Type-safe components
+interface CardProps {
+  title: string;
+  description: string;
+  image?: string;
+}
+
+export function Card({ title, description, image }: CardProps) {
+  return (
+    <div className="card">
+      {image && <img src={image} alt={title} />}
+      <h3>{title}</h3>
+      <p>{description}</p>
+    </div>
+  )
+}
+```
+
+## JSX / React
+
+MDX seamlessly integrates with React components, allowing you to embed interactive UI elements directly in your content:
+
+### Component Integration
+- Import and use any React component
+- Create custom MDX-specific components
+- Mix components with Markdown content
+- Style components with CSS-in-JS or Tailwind
+
+### Interactive Documentation
+- Live code examples and playgrounds
+- Interactive demonstrations
+- Dynamic data visualization
+- User input and form handling
+
+### Styling Options
+- CSS-in-JS libraries (styled-components, emotion)
+- Utility-first frameworks (Tailwind CSS)
+- CSS Modules support
+- Global styles and theming
+
+### Examples
+
+```jsx
+import { useState } from 'react'
+import { Chart } from 'recharts'
+import { Button } from './ui/button'
+
+// Interactive component example
+export function Counter() {
+  const [count, setCount] = useState(0)
+  return (
+    <div className="flex gap-4 items-center">
+      <Button onClick={() => setCount(c => c - 1)}>-</Button>
+      <span className="text-2xl">{count}</span>
+      <Button onClick={() => setCount(c => c + 1)}>+</Button>
+    </div>
+  )
+}
+
+// Data visualization example
+export function PopulationChart({ data }) {
+  return (
+    <Chart
+      data={data}
+      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+    >
+      <XAxis dataKey="year" />
+      <YAxis />
+      <Tooltip />
+      <Line type="monotone" dataKey="population" stroke="#8884d8" />
+    </Chart>
+  )
+}
+
+// Form handling example
+export function ContactForm() {
+  const [status, setStatus] = useState('')
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    const formData = new FormData(e.target)
+    setStatus('Sending...')
+
+    try {
+      await fetch('/api/contact', {
+        method: 'POST',
+        body: formData
+      })
+      setStatus('Message sent!')
+    } catch (err) {
+      setStatus('Error sending message')
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <input type="email" name="email" placeholder="Email" required />
+      <textarea name="message" placeholder="Message" required />
+      <Button type="submit">Send</Button>
+      {status && <p>{status}</p>}
+    </form>
+  )
+}
+```
+
+These examples demonstrate how MDX combines the simplicity of Markdown with the power of React components to create rich, interactive documentation. Components can be imported and used just like in regular React applications, while maintaining the ease of writing content in Markdown.
+
+

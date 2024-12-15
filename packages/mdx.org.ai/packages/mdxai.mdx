@@ -1,0 +1,188 @@
+---
+$type: https://mdx.org.ai/Package
+$context: https://mdx.org.ai
+$id: https://mdx.org.ai/packages/mdxai
+title: mdxai Package
+description: A library for generating and editing MDX context and type definitions with JSON-LD metadata support
+---
+
+# mdxai
+
+[mdxai](https://npmjs.com/mdxai) is a library for generating and editing MDX $context and $type from [mdxld](./mdxld). It provides tools for working with semantic MDX content and managing JSON-LD metadata.
+
+## Installation
+
+```bash
+# Using npm
+npm install mdxai
+
+# Using yarn
+yarn add mdxai
+
+# Using pnpm
+pnpm add mdxai
+```
+
+## Usage
+
+### Basic Example
+
+```javascript
+import { createContext, addType } from 'mdxai'
+
+// Create a new MDX context
+const context = createContext('https://myapp.com')
+
+// Add a custom type
+const blogPostType = addType(context, {
+  name: 'BlogPost',
+  properties: {
+    title: 'string',
+    author: 'Person',
+    date: 'Date'
+  }
+})
+
+// Generate MDX with context
+const mdx = `---
+$context: ${context.url}
+$type: BlogPost
+title: My First Post
+author:
+  name: John Doe
+date: 2024-01-15
+---
+
+# ${blogPostType.properties.title}
+`
+```
+
+### Advanced Usage
+
+```javascript
+import { validateType, extendType } from 'mdxai'
+
+// Extend an existing type
+const extendedPost = extendType(blogPostType, {
+  properties: {
+    tags: 'string[]',
+    featured: 'boolean'
+  }
+})
+
+// Validate MDX content against type
+const isValid = validateType(mdxContent, extendedPost)
+```
+
+## API Reference
+
+### Core Functions
+
+#### `createContext(url: string, options?: ContextOptions): Context`
+Creates a new MDX context with the specified base URL.
+
+#### `addType(context: Context, config: TypeConfig): Type`
+Adds a new type definition to the context.
+
+#### `validateType(content: string, type: Type): boolean`
+Validates MDX content against a type definition.
+
+#### `extendType(baseType: Type, extension: TypeExtension): Type`
+Creates a new type by extending an existing type.
+
+### Types and Interfaces
+
+```typescript
+interface Context {
+  url: string
+  types: Record<string, Type>
+}
+
+interface Type {
+  name: string
+  properties: Record<string, PropertyType>
+}
+
+interface TypeConfig {
+  name: string
+  properties: Record<string, string>
+  extends?: string[]
+}
+
+type PropertyType = 'string' | 'number' | 'boolean' | 'Date' | 'object' | 'array'
+```
+
+## Examples
+
+### Content Validation
+
+```javascript
+import { createContext, addType, validateType } from 'mdxai'
+
+// Set up context and type
+const context = createContext('https://docs.example.com')
+const articleType = addType(context, {
+  name: 'Article',
+  properties: {
+    title: 'string',
+    summary: 'string',
+    tags: 'string[]'
+  }
+})
+
+// Validate content
+const mdxContent = `---
+$context: https://docs.example.com
+$type: Article
+title: Understanding MDX
+summary: A guide to MDX and semantic content
+tags:
+  - mdx
+  - tutorial
+---
+
+Content here...
+`
+
+const isValid = validateType(mdxContent, articleType)
+console.log(`Content is valid: ${isValid}`)
+```
+
+### Type Extension
+
+```javascript
+import { extendType } from 'mdxai'
+
+// Create an extended article type with additional properties
+const blogArticle = extendType(articleType, {
+  properties: {
+    author: {
+      type: 'object',
+      properties: {
+        name: 'string',
+        bio: 'string'
+      }
+    },
+    publishDate: 'Date'
+  }
+})
+```
+
+## Best Practices
+
+1. Always validate MDX content against defined types
+2. Use semantic naming for types and properties
+3. Keep type definitions focused and modular
+4. Document custom types and extensions
+5. Follow JSON-LD conventions
+6. Handle validation errors gracefully
+
+## Related Packages
+- [mdxld](./mdxld) - Core MDX Linked Data library
+- [react-mdxld](./react-mdxld) - React components for MDX Linked Data
+- [remark-mdxld](./remark-mdxld) - Remark plugin for MDX Linked Data
+
+## See Also
+- [MDX Documentation](https://mdxjs.com)
+- [JSON-LD Specification](https://json-ld.org)
+- [Schema.org](https://schema.org)
