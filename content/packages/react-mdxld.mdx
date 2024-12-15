@@ -1,0 +1,238 @@
+---
+"@id": https://mdx.org.ai/packages/react-mdxld
+"@context": https://mdx.org.ai
+"@type": Package
+title: react-mdxld Package
+---
+
+# react-mdxld
+
+[react-mdxld](https://npmjs.com/react-mdxld) is a React component library for working with MDX Linked Data. It provides React components, hooks, and utilities for integrating semantic MDX content into React applications.
+
+## Installation
+
+```bash
+# Using npm
+npm install react-mdxld
+
+# Using yarn
+yarn add react-mdxld
+
+# Using pnpm
+pnpm add react-mdxld
+```
+
+## Usage
+
+### Basic Example
+
+```jsx
+import { MDXProvider, useMDXData } from 'react-mdxld'
+
+// Wrap your app with MDXProvider
+function App() {
+  return (
+    <MDXProvider>
+      <BlogPost />
+    </MDXProvider>
+  )
+}
+
+// Use MDX data in components
+function BlogPost() {
+  const { data, content } = useMDXData()
+
+  return (
+    <article>
+      <h1>{data.title}</h1>
+      <div className="author">By {data.author.name}</div>
+      <div className="content">{content}</div>
+    </article>
+  )
+}
+```
+
+### Advanced Usage
+
+```jsx
+import { MDXContext, withMDX, createMDXComponent } from 'react-mdxld'
+
+// Create a custom MDX-aware component
+const BlogCard = withMDX(({ data, className }) => (
+  <div className={className}>
+    <h2>{data.title}</h2>
+    <p>{data.excerpt}</p>
+    <span>{data.readingTime} min read</span>
+  </div>
+))
+
+// Create a dynamic MDX component
+const DynamicContent = createMDXComponent({
+  components: {
+    BlogCard,
+    CustomHeading: props => <h1 className="fancy" {...props} />
+  }
+})
+```
+
+## API Reference
+
+### Components
+
+#### `<MDXProvider>`
+Root provider component for MDX context.
+
+```jsx
+<MDXProvider
+  components={customComponents}
+  context={mdxContext}
+  plugins={[/* MDX plugins */]}
+>
+  {children}
+</MDXProvider>
+```
+
+#### `<MDXContent>`
+Component for rendering MDX content with data.
+
+```jsx
+<MDXContent
+  source={mdxSource}
+  components={components}
+  scope={customScope}
+/>
+```
+
+### Hooks
+
+#### `useMDXData()`
+Hook to access MDX data and content.
+
+```typescript
+interface MDXData {
+  data: Record<string, any>
+  content: string
+  metadata?: Record<string, any>
+}
+
+const { data, content, metadata } = useMDXData()
+```
+
+#### `useMDXComponent()`
+Hook to create MDX components dynamically.
+
+```typescript
+const MDXComponent = useMDXComponent(source, options)
+```
+
+### Higher-Order Components
+
+#### `withMDX(Component)`
+HOC to inject MDX data into components.
+
+```typescript
+interface MDXProps {
+  data: Record<string, any>
+  content?: string
+  metadata?: Record<string, any>
+}
+
+const EnhancedComponent = withMDX(BaseComponent)
+```
+
+## Examples
+
+### Blog Component with MDX Data
+
+```jsx
+import { useMDXData, MDXContent } from 'react-mdxld'
+
+function BlogPost() {
+  const { data } = useMDXData()
+
+  return (
+    <article className="blog-post">
+      <header>
+        <h1>{data.title}</h1>
+        <div className="metadata">
+          <span>By {data.author.name}</span>
+          <time>{new Date(data.date).toLocaleDateString()}</time>
+          <span>{data.readingTime} min read</span>
+        </div>
+      </header>
+
+      <MDXContent>
+        {data.content}
+      </MDXContent>
+
+      <footer>
+        <div className="tags">
+          {data.tags.map(tag => (
+            <span key={tag} className="tag">{tag}</span>
+          ))}
+        </div>
+      </footer>
+    </article>
+  )
+}
+```
+
+### Custom Components with MDX Integration
+
+```jsx
+import { withMDX, createMDXComponent } from 'react-mdxld'
+
+// Create a reusable card component
+const Card = withMDX(({ data, className }) => (
+  <div className={`card ${className}`}>
+    <img src={data.image} alt={data.title} />
+    <div className="card-content">
+      <h3>{data.title}</h3>
+      <p>{data.description}</p>
+    </div>
+  </div>
+))
+
+// Create a layout component
+const Layout = withMDX(({ data, children }) => (
+  <div className="layout">
+    <header>
+      <nav>{/* Navigation content */}</nav>
+    </header>
+    <main>
+      <h1>{data.title}</h1>
+      {children}
+    </main>
+    <footer>
+      <p>{data.copyright}</p>
+    </footer>
+  </div>
+))
+
+// Use components together
+const Page = createMDXComponent({
+  components: {
+    Card,
+    Layout
+  }
+})
+```
+
+## Best Practices
+
+1. Always wrap your app with MDXProvider
+2. Use TypeScript for better type safety
+3. Implement error boundaries for MDX components
+4. Cache compiled MDX when possible
+5. Keep components focused and reusable
+6. Handle loading and error states
+
+## Related Packages
+- [mdxai](./mdxai) - MDX AI integration library
+- [mdxe](./mdxe) - MDX execution environment
+- [mdxld](./mdxld) - Core MDX Linked Data library
+
+## See Also
+- [React Documentation](https://react.dev)
+- [MDX Documentation](https://mdxjs.com)
+- [JSON-LD in React](https://json-ld.org/learn.html)

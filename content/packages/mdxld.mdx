@@ -1,5 +1,207 @@
+---
+"@id": https://mdx.org.ai/packages/mdxld
+"@context": https://mdx.org.ai
+"@type": Package
+title: mdxld Package
+---
+
 # mdxld
 
-[mdxld](https://npmjs.com/mdxld) is a library for for parsing and serializing MDX with JSON-LD into data and content.
+[mdxld](https://npmjs.com/mdxld) is a library for parsing and serializing MDX with JSON-LD into data and content. It provides the core functionality for working with semantic MDX content and managing structured data within MDX documents.
+
+## Installation
+
+```bash
+# Using npm
+npm install mdxld
+
+# Using yarn
+yarn add mdxld
+
+# Using pnpm
+pnpm add mdxld
+```
+
+## Usage
+
+### Basic Example
+
+```javascript
+import { parse, serialize } from 'mdxld'
+
+// Parse MDX content with JSON-LD
+const { data, content } = await parse(`---
+@context: https://schema.org
+@type: Article
+title: Getting Started with MDX
+author:
+  name: John Doe
+---
+
+# ${data.title}
+Written by ${data.author.name}
+`)
+
+// Serialize data and content back to MDX
+const mdx = await serialize({
+  data: {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    title: 'Updated Title',
+    author: { name: 'Jane Smith' }
+  },
+  content: '# Updated Content'
+})
+```
+
+### Advanced Usage
+
+```javascript
+import { transform, validate } from 'mdxld'
+
+// Transform MDX data
+const transformed = await transform(mdxContent, {
+  plugins: [
+    // Custom transformation plugins
+    addMetadata({ category: 'tutorial' }),
+    normalizeAuthors()
+  ]
+})
+
+// Validate MDX against schema
+const isValid = await validate(mdxContent, {
+  schema: 'https://schema.org/Article',
+  strict: true
+})
+```
+
+## API Reference
+
+### Core Functions
+
+#### `parse(content: string, options?: ParseOptions): Promise<ParseResult>`
+Parses MDX content and extracts JSON-LD data.
+
+#### `serialize(data: object, options?: SerializeOptions): Promise<string>`
+Serializes data and content back into MDX format.
+
+#### `transform(content: string, options?: TransformOptions): Promise<string>`
+Applies transformations to MDX content.
+
+#### `validate(content: string, options?: ValidateOptions): Promise<boolean>`
+Validates MDX content against JSON-LD schemas.
+
+### Types and Interfaces
+
+```typescript
+interface ParseOptions {
+  strict?: boolean
+  plugins?: Plugin[]
+  schema?: string
+}
+
+interface ParseResult {
+  data: Record<string, any>
+  content: string
+  metadata?: Record<string, any>
+}
+
+interface SerializeOptions {
+  format?: 'compact' | 'pretty'
+  includeMetadata?: boolean
+}
+
+interface TransformOptions {
+  plugins: Plugin[]
+  context?: Record<string, any>
+}
+
+interface ValidateOptions {
+  schema?: string
+  strict?: boolean
+}
+```
+
+## Examples
+
+### Content Processing Pipeline
+
+```javascript
+import { parse, transform, serialize } from 'mdxld'
+
+async function processMDX(content) {
+  // Parse the content
+  const { data, content: mdxContent } = await parse(content)
+
+  // Apply transformations
+  const transformed = await transform(mdxContent, {
+    plugins: [
+      addTimestamp(),
+      validateLinks(),
+      optimizeImages()
+    ]
+  })
+
+  // Update metadata
+  const updatedData = {
+    ...data,
+    lastModified: new Date().toISOString()
+  }
+
+  // Serialize back to MDX
+  return serialize({
+    data: updatedData,
+    content: transformed
+  })
+}
+```
+
+### Schema Validation
+
+```javascript
+import { validate, createSchema } from 'mdxld'
+
+// Define custom schema
+const blogSchema = createSchema({
+  '@type': 'BlogPosting',
+  required: ['title', 'author', 'date'],
+  properties: {
+    title: { type: 'string' },
+    author: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        email: { type: 'string', format: 'email' }
+      }
+    },
+    date: { type: 'string', format: 'date-time' }
+  }
+})
+
+// Validate content against schema
+const isValid = await validate(mdxContent, {
+  schema: blogSchema,
+  strict: true
+})
+```
+
+## Best Practices
+
+1. Always validate data against schemas
+2. Use type-safe transformations
+3. Handle parsing errors gracefully
+4. Cache parsed results when appropriate
+5. Follow JSON-LD best practices
+6. Keep transformations modular
+
+## Related Packages
+- [mdxai](./mdxai) - MDX AI integration library
+- [mdxe](./mdxe) - MDX execution environment
+- [react-mdxld](./react-mdxld) - React components for MDX Linked Data
+
+## See Also
+- [JSON-LD Specification](https://json-ld.org)
+- [Schema.org](https://schema.org)
+- [MDX Documentation](https://mdxjs.com)
 
 

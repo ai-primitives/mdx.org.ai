@@ -1,0 +1,130 @@
+---
+"@id": https://mdx.org.ai/Blog
+"@context": https://mdx.org.ai
+"@type": TypeDefinition
+title: Blog Type Definition
+---
+
+# Blog Type
+
+## Overview
+
+The Blog type represents a collection of blog posts and related content in MDX format. It provides structure for organizing, categorizing, and managing blog content with rich metadata support and interactive components.
+
+## Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `title` | `string` | Yes | The title of the blog |
+| `description` | `string` | Yes | A brief description of the blog's purpose |
+| `authors` | `object[]` | No | Array of blog authors and their information |
+| `categories` | `string[]` | No | List of blog categories |
+| `tags` | `string[]` | No | List of tags for content organization |
+| `layout` | `string` | No | The layout template to use |
+| `settings` | `object` | No | Blog configuration settings |
+| `features` | `object` | No | Enabled blog features |
+
+## Examples
+
+### Basic Blog Configuration
+
+```mdx
+---
+"@context": https://mdx.org.ai
+"@type": Blog
+title: MDX Developer Blog
+description: Latest updates and tutorials for MDX
+authors:
+  - name: John Doe
+    bio: MDX Core Team
+    avatar: /avatars/john.jpg
+categories:
+  - Tutorials
+  - Updates
+  - Best Practices
+layout: blog-default
+---
+
+<Blog>
+  <Header />
+  <PostList />
+  <Sidebar>
+    <Categories />
+    <TagCloud />
+  </Sidebar>
+</Blog>
+```
+
+### Interactive Developer Blog
+
+```mdx
+---
+"@context": https://mdx.org.ai
+"@type": Blog
+title: MDX Interactive Tutorials
+description: Learn MDX through interactive examples
+features:
+  code_playground: true
+  live_preview: true
+  comments: true
+settings:
+  syntax_highlighting: true
+  math_equations: true
+---
+
+<Blog>
+  <InteractiveHeader />
+  <PostGrid>
+    <CodePlayground />
+    <Preview />
+  </PostGrid>
+  <Comments />
+</Blog>
+```
+
+### Documentation Blog
+
+```mdx
+---
+"@context": https://mdx.org.ai
+"@type": Blog
+title: MDX Documentation Updates
+description: Documentation changes and improvements
+settings:
+  version_tracking: true
+  change_highlights: true
+features:
+  search: true
+  version_selector: true
+categories:
+  - API Changes
+  - New Features
+  - Migration Guides
+---
+
+<Blog>
+  <VersionHeader />
+  <SearchBar />
+  <ChangeLog />
+  <RelatedDocs />
+</Blog>
+```
+
+## Best Practices
+
+1. Organize content with clear categories and tags
+2. Use consistent metadata across posts
+3. Implement proper pagination
+4. Include search functionality
+5. Enable RSS/Atom feeds
+6. Implement proper SEO metadata
+
+## Related Types
+- [BlogPost](https://mdx.org.ai/BlogPost)
+- [Component](https://mdx.org.ai/Component)
+- [Function](https://mdx.org.ai/Function)
+
+## See Also
+- [MDX Blog Components](https://mdx.org.ai/packages/mdxe)
+- [Blog Implementation Guide](https://mdx.org.ai/guides/blog)
+- [Example Blog Templates](https://mdx.org.ai/examples/blog)
