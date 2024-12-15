@@ -1,38 +1,51 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { parse, stringify } from 'yaml';
-import { globSync } from 'glob';
-import { fileURLToPath } from 'url';
+#!/usr/bin/env node
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const path = require('path');
+const fs = require('fs');
+const yaml = require('yaml');
+const { globSync } = require('glob');
 
+// Use require.main to get the directory of the current script
+const scriptDir = require.main?.filename ? path.dirname(require.main.filename) : __dirname;
+
+/**
+ * Extract description from content
+ * @param {string} content - The MDX content
+ * @returns {string} The extracted description
+ */
 function getDescription(content: string): string {
   // Find the first paragraph after the H1 heading
   const lines = content.split('\n');
-  const headingIndex = lines.findIndex(line => line.trim().startsWith('# '));
+  const headingIndex = lines.findIndex((line: string) => line.trim().startsWith('# '));
   if (headingIndex === -1) return '';
 
   const description = lines.slice(headingIndex + 1)
-    .find(line => line.trim() !== '')?.trim() || '';
+    .find((line: string) => line.trim() !== '')?.trim() || '';
   return description;
 }
 
+/**
+ * Update frontmatter in MDX content
+ * @param {string} content - The MDX content
+ * @param {string} filename - The filename
+ * @returns {string} The updated content
+ */
 function updateFrontmatter(content: string, filename: string): string {
   // Split content into frontmatter and body
   const parts = content.trim().split(/^---\s*$/m);
 
   // Initialize frontmatter
+  /** @type {Record<string, any>} */
   let frontmatter: Record<string, any> = {};
   let body = '';
 
   if (parts.length >= 3) {
     // Existing frontmatter
     try {
-      frontmatter = parse(parts[1].trim());
+      frontmatter = yaml.parse(parts[1].trim());
       body = parts.slice(2).join('---').trim();
-    } catch (e) {
-      console.error(`Error parsing frontmatter in ${filename}:`, e);
+    } catch (error: unknown) {
+      console.error(`Error parsing frontmatter in ${filename}:`, error);
       return content;
     }
   } else {
@@ -41,6 +54,7 @@ function updateFrontmatter(content: string, filename: string): string {
   }
 
   // Convert @ prefix to $ prefix
+  /** @type {Record<string, any>} */
   const newFrontmatter: Record<string, any> = {};
   for (const [key, value] of Object.entries(frontmatter)) {
     const newKey = key.startsWith('@') ? key.replace('@', '$') : key;
@@ -77,7 +91,7 @@ function updateFrontmatter(content: string, filename: string): string {
   // Generate new content
   const newContent = [
     '---',
-    stringify(newFrontmatter),
+    yaml.stringify(newFrontmatter),
     '---',
     '',
     body
@@ -87,9 +101,9 @@ function updateFrontmatter(content: string, filename: string): string {
 }
 
 // Main function
-function main() {
+function main(): void {
   try {
-    const contentDir = path.join(__dirname, '..', 'packages/mdx-types/content/types');
+    const contentDir = path.join(scriptDir, '..', 'packages/mdx-types/content/types');
     console.log(`[Info] Looking for MDX files in: ${contentDir}`);
 
     const mdxFiles = globSync('**/*.mdx', { cwd: contentDir });
@@ -104,13 +118,13 @@ function main() {
         const updatedContent = updateFrontmatter(content, file);
         fs.writeFileSync(fullPath, updatedContent);
         console.log(`[Success] Updated ${file}`);
-      } catch (e) {
-        console.error(`[Error] Failed to process ${file}:`, e);
+      } catch (error: unknown) {
+        console.error(`[Error] Failed to process ${file}:`, error);
       }
     }
 
     console.log('[Success] Completed frontmatter updates');
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[Fatal Error] Script failed:', error);
     process.exit(1);
   }

@@ -26,32 +26,37 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-import { join, resolve, isAbsolute, dirname } from 'path';
-import { existsSync } from 'fs';
-import { mkdir, writeFile } from 'fs/promises';
-import { glob } from 'glob';
-import {
-  parseMDXFile,
-  type MDXParseResult,
-  type ValidMDXParseResult,
-  type MDXMetadata,
-  isValidMetadata
-} from '../packages/mdx-types/src/utils/mdx-parser.js';
-import { fileURLToPath } from 'url';
-import { promises as fsPromises } from 'fs';
+const path = require('path');
+const fs = require('fs');
+const fsPromises = require('fs').promises;
+const { glob } = require('glob');
+const mdxParser = require('../packages/mdx-types/src/utils/mdx-parser');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const { parseMDXFile, isValidMetadata } = mdxParser;
 
-interface TypeGenerationError extends Error {
-  code?: string;
-  stack?: string;
-}
+// TypeScript type imports
+/** @typedef {import('../packages/mdx-types/src/utils/mdx-parser').MDXParseResult} MDXParseResult */
+/** @typedef {import('../packages/mdx-types/src/utils/mdx-parser').ValidMDXParseResult} ValidMDXParseResult */
+/** @typedef {import('../packages/mdx-types/src/utils/mdx-parser').MDXMetadata} MDXMetadata */
+/** @typedef {Error & { code?: string; stack?: string; }} TypeGenerationError */
+
+// Use require.main to get the directory of the current script
+const scriptDir = require.main?.filename ? path.dirname(require.main.filename) : __dirname;
+const contentDir = path.join(scriptDir, '..', 'content');
+const packagesDir = path.join(scriptDir, '..', 'packages');
+const examplesDir = path.join(scriptDir, '..', 'examples');
 
 const debug = true;
-const log = (...args: any[]) => debug && console.log(...args);
+/** @type {(...args: any[]) => void} */
+const log = function(...args: any[]): void {
+  if (debug) console.log(...args);
+};
 
-async function generateTypeDefinitions(files: ValidMDXParseResult[]): Promise<string | null> {
+/**
+ * @param {ValidMDXParseResult[]} files
+ * @returns {Promise<string | null>}
+ */
+async function generateTypeDefinitions(files) {
   try {
     console.log('[Debug] Starting type definition generation...');
 
@@ -79,7 +84,7 @@ async function generateTypeDefinitions(files: ValidMDXParseResult[]): Promise<st
     console.log('[Debug] Generating property definitions...');
 
     // Track used type names to prevent duplicates
-    const usedTypes = new Set<string>();
+    const usedTypes = new Set();
 
     // Generate property definitions with better error handling
     const propertyDefinitions = await Promise.all(
@@ -124,7 +129,7 @@ async function generateTypeDefinitions(files: ValidMDXParseResult[]): Promise<st
     );
 
     // Filter out null values and join definitions
-    const validDefinitions = propertyDefinitions.filter((def): def is string => def !== null);
+    const validDefinitions = propertyDefinitions.filter((def) => def !== null);
 
     if (validDefinitions.length === 0) {
       console.error('[Error] No valid type definitions generated');
@@ -147,7 +152,11 @@ async function generateTypeDefinitions(files: ValidMDXParseResult[]): Promise<st
   }
 }
 
-function isValidParseResult(result: MDXParseResult | null): result is ValidMDXParseResult {
+/**
+ * @param {MDXParseResult | null} result
+ * @returns {result is ValidMDXParseResult}
+ */
+function isValidParseResult(/** @type {MDXParseResult | null} */ result) {
   if (!result) return false;
   const metadata = result.metadata;
   return (
@@ -159,31 +168,34 @@ function isValidParseResult(result: MDXParseResult | null): result is ValidMDXPa
   );
 }
 
-const main = async () => {
+/**
+ * @returns {Promise<void>}
+ */
+async function main() {
   try {
     console.log('=== Starting MDX Type Generation ===');
     log('Current directory:', process.cwd());
-    log('Script directory:', __dirname);
+    log('Script directory:', scriptDir);
 
     console.log('[Debug] Starting directory checks...');
     const contentDirs = await Promise.all([
       'content',
       'packages/mdx-types/content/types'
     ].map(async (dir) => {
-      let absolutePath: string;
+      let absolutePath;
       try {
-        absolutePath = resolve(process.cwd(), dir);
+        absolutePath = path.resolve(process.cwd(), dir);
         console.log(`[Directory Check] Checking directory: ${absolutePath}`);
-        const exists = existsSync(absolutePath);
+        const exists = fs.existsSync(absolutePath);
         if (!exists) {
           console.warn(`[Warning] Directory does not exist: ${absolutePath}`);
           return null;
         }
-        await fsPromises.access(absolutePath, fsPromises.constants.R_OK);
+        await fsPromises.access(absolutePath, fs.constants.R_OK);
         console.log(`[Directory Access] Directory exists and is readable: ${absolutePath}`);
         return absolutePath;
       } catch (error) {
-        console.error(`[Directory Error] Directory not accessible: ${absolutePath!}`, {
+        console.error(`[Directory Error] Directory not accessible: ${absolutePath}`, {
           error: error instanceof Error ? {
             name: error.name,
             message: error.message,
@@ -203,7 +215,7 @@ const main = async () => {
       return [];
     });
 
-    const validDirs = contentDirs.filter((dir): dir is string => dir !== null);
+    const validDirs = contentDirs.filter((dir) => dir !== null);
 
     if (validDirs.length === 0) {
       console.warn('[Warning] No valid content directories found');
@@ -214,11 +226,11 @@ const main = async () => {
 
     console.log('[Debug] Starting file search...');
     const mdxFilesPromises = validDirs
-      .filter((dir): dir is string => typeof dir === 'string')
+      .filter((dir) => typeof dir === 'string')
       .map(async (dir) => {
         try {
           console.log(`[File Search] Searching for MDX files in ${dir}...`);
-          const pattern = join(dir, '**/*.mdx');
+          const pattern = path.join(dir, '**/*.mdx');
           console.log(`[File Search] Using glob pattern: ${pattern}`);
 
           const files = await glob(pattern).catch(error => {
@@ -242,7 +254,7 @@ const main = async () => {
           const validFiles = await Promise.all(
             files.map(async (file) => {
               try {
-                await fsPromises.access(file, fsPromises.constants.R_OK);
+                await fsPromises.access(file, fs.constants.R_OK);
                 console.log(`[File Access] File ${file} is readable`);
                 return file;
               } catch (error) {
@@ -261,7 +273,7 @@ const main = async () => {
             return [];
           });
 
-          return validFiles.filter((file): file is string => file !== null);
+          return validFiles.filter((file) => file !== null);
         } catch (error) {
           console.error('[Directory Error] Error searching for MDX files:', {
             error: error instanceof Error ? error.message : String(error),
@@ -286,12 +298,12 @@ const main = async () => {
 
     log('Processing files:', allMdxFiles);
     console.log('[Debug] Starting file parsing...');
-    let parsedFiles: (MDXParseResult | null)[] = [];
-    const validMdxFiles = allMdxFiles.filter((file): file is string => typeof file === 'string');
+    let parsedFiles = [];
+    const validMdxFiles = allMdxFiles.filter((file) => typeof file === 'string');
 
     const parsePromises = validMdxFiles.map(async (filePath) => {
       try {
-        const absolutePath = isAbsolute(filePath) ? filePath : resolve(process.cwd(), filePath);
+        const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
         console.log(`[Parse] Processing file: ${absolutePath}`);
 
         const result = await parseMDXFile(absolutePath, true).catch(error => {
@@ -358,8 +370,8 @@ const main = async () => {
     }
 
     const validFiles = parsedFiles
-      .filter((result): result is NonNullable<typeof result> => result !== null)
-      .filter((result): result is ValidMDXParseResult => {
+      .filter((result) => result !== null)
+      .filter((result) => {
         try {
           return isValidParseResult(result) && isValidMetadata(result.metadata);
         } catch (error) {
@@ -367,7 +379,7 @@ const main = async () => {
           return false;
         }
       })
-      .map((file: ValidMDXParseResult) => ({
+      .map((file) => ({
         ...file,
         metadata: {
           ...file.metadata,
@@ -400,10 +412,10 @@ const main = async () => {
         process.exit(1);
       }
 
-      const outputDir = resolve(__dirname, '..', 'packages/mdx-types/src/generated');
+      const outputDir = path.resolve(scriptDir, '..', 'packages/mdx-types/src/generated');
       console.log('[Debug] Creating output directory...');
       try {
-        await mkdir(outputDir, { recursive: true }).catch(error => {
+        await fsPromises.mkdir(outputDir, { recursive: true }).catch(error => {
           console.error('[Fatal Error] Error creating output directory:', {
             error: error instanceof Error ? {
               name: error.name,
@@ -416,9 +428,9 @@ const main = async () => {
         });
         console.log(`[Progress] Created output directory: ${outputDir}`);
 
-        const outputFile = join(outputDir, 'frontmatter.d.ts');
+        const outputFile = path.join(outputDir, 'frontmatter.d.ts');
         console.log('[Debug] Writing type definitions to file...');
-        await writeFile(outputFile, typeDefinitions, 'utf-8').catch(error => {
+        await fsPromises.writeFile(outputFile, typeDefinitions, 'utf-8').catch(error => {
           console.error('[Fatal Error] Error writing type definitions:', {
             error: error instanceof Error ? {
               name: error.name,
@@ -461,9 +473,8 @@ const main = async () => {
     });
     process.exit(1);
   }
-};
+}
 
-// Wrap execution in IIFE for better error handling
 (async () => {
   try {
     await main();
