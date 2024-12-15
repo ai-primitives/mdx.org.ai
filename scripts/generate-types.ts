@@ -1,8 +1,9 @@
+#!/usr/bin/env node
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { globSync } from 'glob';
 import { parseMDXFile } from '../packages/mdx-types/src/utils/mdx-parser.js';
-import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { promises as fs, existsSync, mkdirSync } from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -122,8 +123,8 @@ async function main() {
     const parsedFiles = await Promise.all(mdxFiles.map(async (file) => {
       try {
         console.log(`Parsing ${file}...`);
-        const result = await Promise.resolve(parseMDXFile(file));
-        if (!result.metadata.$type && !result.metadata.title && !result.metadata.description) {
+        const result = await parseMDXFile(file);
+        if (!result.metadata.$type || !result.metadata.title || !result.metadata.description) {
           console.warn(`Warning: File ${file} is missing required frontmatter fields ($type, title, description)`);
         }
         return result;
@@ -146,7 +147,7 @@ async function main() {
     const typeDefinitions = generateTypeDefinitions(parsedFiles.map(f => f.metadata));
     const typesPath = join(generatedDir, 'types.ts');
     console.log(`\nWriting generated types to ${typesPath}`);
-    await Promise.resolve(writeFileSync(typesPath, typeDefinitions));
+    await fs.writeFile(typesPath, typeDefinitions);
 
     console.log(`\nSuccessfully generated types from ${parsedFiles.length} MDX files`);
     console.log('Generated types directory:', generatedDir);
