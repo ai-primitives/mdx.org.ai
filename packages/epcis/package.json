@@ -5,9 +5,10 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && wrangler types",
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "clean": "rm -rf dist src/**/*.d.ts"
   },
   "dependencies": {
     "@clickhouse/client": "^0.2.7",
