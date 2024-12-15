@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Enable detailed logging
+const debug = true;
+const log = (...args: any[]) => debug && console.log(...args);
+
 process.on('unhandledRejection', (error: unknown) => {
   console.error('UnhandledPromiseRejection:', {
     message: error instanceof Error ? error.message : String(error),
@@ -12,12 +16,15 @@ process.on('unhandledRejection', (error: unknown) => {
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { globSync } from 'glob';
-import { parseMDXFile } from '@/mdx-types/src/utils/mdx-parser.js';
-import type { MDXParseResult, MDXMetadata } from '@/mdx-types/src/utils/mdx-parser.js';
+import { parseMDXFile } from '../packages/mdx-types/src/utils/mdx-parser.js';
+import type { MDXParseResult, MDXMetadata } from '../packages/mdx-types/src/utils/mdx-parser.js';
 import { promises as fs, existsSync, mkdirSync } from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+log('Starting type generation script...');
+log('Current directory:', __dirname);
 
 function generateTypeDefinitions(metadataList: MDXMetadata[]): string {
   const normalizeType = (type: string) => type.replace(/^https:\/\/mdx\.org\.ai\//, '');
@@ -72,93 +79,93 @@ export interface MDXFrontmatter {
 
 async function main() {
   try {
-    console.log('Starting type generation process...');
+    log('Starting main function...');
+
     const contentDirs = [
-      join(__dirname, '../packages/mdx-types/content/types'),
+      join(__dirname, '../examples'),
       join(__dirname, '../content'),
-      join(__dirname, '../examples')
+      join(__dirname, '../package'),
+      join(__dirname, '../packages/mdx-types/content/types')
     ];
 
-    console.log('Searching for MDX files in directories:');
-    contentDirs.forEach(dir => console.log(`- ${dir}`));
+    log('Content directories to process:', contentDirs);
 
-    console.log('\nCollecting MDX files...');
-    const mdxFiles = await Promise.all(contentDirs.map(async (dir) => {
-      if (existsSync(dir)) {
-        try {
-          console.log(`Searching directory: ${dir}`);
-          const dirFiles = globSync(join(dir, '*.mdx'));
-          console.log(`Found ${dirFiles.length} MDX files in ${dir}`);
-          return dirFiles;
-        } catch (error) {
-          console.error(`Error searching directory ${dir}:`, error);
-          return [];
-        }
+    // Verify directories exist
+    for (const dir of contentDirs) {
+      if (!existsSync(dir)) {
+        log(`Warning: Directory does not exist: ${dir}`);
       }
-      console.warn(`Directory not found: ${dir}`);
-      return [];
-    })).then(files => {
-      const flatFiles = files.flat();
-      console.log(`Total MDX files found: ${flatFiles.length}`);
-      return flatFiles;
+    }
+
+    // Find all MDX files
+    const mdxFiles = contentDirs.flatMap(dir => {
+      try {
+        const files = globSync('**/*.mdx', {
+          cwd: dir,
+          absolute: true
+        });
+        log(`Found ${files.length} MDX files in ${dir}`);
+        return files;
+      } catch (error) {
+        console.error(`Error finding MDX files in ${dir}:`, error);
+        return [];
+      }
     });
 
     if (mdxFiles.length === 0) {
-      throw new Error('No MDX files found in any content directories');
+      throw new Error('No MDX files found in any of the content directories');
     }
 
-    console.log('\nProcessing MDX files...');
-    const parsedFiles = await Promise.all(mdxFiles.map(async (filePath: string) => {
-      try {
-        console.log(`Parsing ${filePath}...`);
-        const result = await parseMDXFile(filePath);
-        console.log(`Successfully parsed ${filePath}`);
-        return result;
-      } catch (error) {
-        console.error(`Error parsing file ${filePath}:`, error);
-        return null;
-      }
-    })).then((files: (MDXParseResult | null)[]) => {
-      const validFiles = files.filter((file): file is MDXParseResult => file !== null);
-      console.log(`Successfully parsed ${validFiles.length} out of ${files.length} files`);
-      return validFiles;
-    });
+    log(`Total MDX files found: ${mdxFiles.length}`);
+    log('MDX files:', mdxFiles);
 
-    if (parsedFiles.length === 0) {
-      throw new Error('No valid MDX files could be parsed');
+    // Parse all MDX files
+    const parsedFiles = await Promise.all(
+      mdxFiles.map(async (file) => {
+        try {
+          log(`Parsing file: ${file}`);
+          const result = await parseMDXFile(file);
+          log(`Successfully parsed ${file}`);
+          return result;
+        } catch (error) {
+          console.error(`Error parsing ${file}:`, error);
+          return null;
+        }
+      })
+    );
+
+    const validParsedFiles = parsedFiles.filter((file): file is MDXParseResult => file !== null);
+
+    if (validParsedFiles.length === 0) {
+      throw new Error('No valid MDX files were successfully parsed');
     }
 
-    console.log('\nGenerating type definitions...');
+    log(`Successfully parsed ${validParsedFiles.length} MDX files`);
+
+    // Generate type definitions
+    const metadataList = validParsedFiles.map(file => file.metadata);
+    const typeDefinitions = generateTypeDefinitions(metadataList);
+
+    // Ensure the generated directory exists
     const generatedDir = join(__dirname, '../packages/mdx-types/src/generated');
-
     if (!existsSync(generatedDir)) {
-      console.log(`Creating generated types directory: ${generatedDir}`);
+      log(`Creating generated types directory: ${generatedDir}`);
       mkdirSync(generatedDir, { recursive: true });
     }
 
-    const typeDefinitions = generateTypeDefinitions(parsedFiles.map(f => f.metadata));
-    const typesPath = join(generatedDir, 'types.ts');
+    // Write the generated types
+    const outputFile = join(generatedDir, 'types.ts');
+    await fs.writeFile(outputFile, typeDefinitions);
+    log(`Successfully wrote type definitions to ${outputFile}`);
 
-    console.log(`\nWriting generated types to ${typesPath}`);
-    await fs.writeFile(typesPath, typeDefinitions);
-
-    console.log(`\nSuccessfully generated types from ${parsedFiles.length} MDX files`);
-    console.log('Generated types directory:', generatedDir);
-  } catch (error: unknown) {
-    console.error('\nError generating types:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : 'No stack trace available',
-      details: JSON.stringify(error, null, 2)
-    });
+  } catch (error) {
+    console.error('Error in main function:', error);
     process.exit(1);
   }
 }
 
-main().catch((error: unknown) => {
-  console.error('Fatal error:', {
-    message: error instanceof Error ? error.message : String(error),
-    stack: error instanceof Error ? error.stack : 'No stack trace available',
-    details: JSON.stringify(error, null, 2)
-  });
+// Execute main function
+main().catch(error => {
+  console.error('Unhandled error in main:', error);
   process.exit(1);
 });

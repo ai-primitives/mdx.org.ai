@@ -9,11 +9,7 @@
     "skipLibCheck": true,
     "outDir": "dist",
     "noEmit": true,
-    "resolveJsonModule": true,
-    "baseUrl": "..",
-    "paths": {
-      "@/*": ["packages/*"]
-    }
+    "resolveJsonModule": true
   },
   "include": ["./**/*.ts"],
   "exclude": ["node_modules", "dist"]
