@@ -5,7 +5,9 @@ import type { Context, MiddlewareHandler } from 'hono';
 import { ClickhouseClient } from './clickhouse';
 import { eventValidationMiddleware } from './middleware/validation';
 import { rateLimitMiddleware } from './middleware/rate-limit';
-import type { EPCISEvent, HonoEnv } from './types';
+import captureRoutes from './routes/capture';
+import queryRoutes from './routes/query';
+import type { HonoEnv } from './types';
 
 const app = new Hono<HonoEnv>();
 
@@ -34,6 +36,10 @@ app.use('*', cors());
 app.use('/capture', rateLimitMiddleware);
 app.use('/capture', eventValidationMiddleware);
 
+// Mount routes
+app.route('/capture', captureRoutes);
+app.route('/queries', queryRoutes);
+
 // Discovery endpoints
 app.options('/', async (c: Context) => {
   c.header('GS1-EPCIS-Version', '2.0.0');
@@ -55,77 +61,24 @@ app.get('/', async (c: Context) => {
   });
 });
 
-// Capture endpoints
-app.options('/capture', async (c: Context) => {
-  c.header('GS1-EPCIS-Capture-Limit', '1000');
-  c.header('GS1-EPCIS-Capture-File-Size-Limit', '10485760'); // 10MB
-  c.header('GS1-Capture-Error-Behaviour', 'rollback');
-  return c.text('', 204);
-});
-
-app.post('/capture', async (c: Context<HonoEnv>) => {
-  try {
-    const events = await c.req.json<EPCISEvent[]>();
-    const clickhouse = c.get('clickhouse');
-
-    // Store events in both KV and Clickhouse
-    await Promise.all([
-      c.env.EPCIS_KV.put(`event-${Date.now()}`, JSON.stringify(events)),
-      ...events.map(event => clickhouse.insertEvent(event))
-    ]);
-
-    return c.json({ success: true }, 201);
-  } catch (error) {
-    throw new HTTPException(400, { message: 'Invalid event data' });
-  }
-});
-
-// Query endpoints
-app.post('/queries', async (c: Context<HonoEnv>) => {
-  try {
-    const query = await c.req.json();
-    const clickhouse = c.get('clickhouse');
-    const results = await clickhouse.queryEvents(query);
-    return c.json({ results });
-  } catch (error) {
-    throw new HTTPException(400, { message: 'Invalid query' });
-  }
-});
-
-// Events endpoints
-app.get('/events', async (c: Context<HonoEnv>) => {
-  const clickhouse = c.get('clickhouse');
-  const perPage = parseInt(c.req.query('perPage') || '30');
-  const nextPageToken = c.req.query('nextPageToken') || '0';
-
-  const events = await clickhouse.queryEvents({
-    limit: perPage,
-    offset: parseInt(nextPageToken)
-  });
-
-  return c.json({
-    events,
-    nextPageToken: events.length === perPage ? (parseInt(nextPageToken) + perPage).toString() : null
-  });
-});
-
-app.get('/events/:eventId', async (c: Context<HonoEnv>) => {
-  const eventId = c.req.param('eventId');
-  const clickhouse = c.get('clickhouse');
-  const event = await clickhouse.queryEvents({ eventId });
-  return c.json(event ? event[0] : {});
-});
-
-// Error handling
+// Error handling with RFC7807 Problem Details format
 app.onError((err: Error, c: Context) => {
   if (err instanceof HTTPException) {
     return c.json({
-      error: err.message
+      type: `https://ref.gs1.org/standards/epcis/exceptions#${err.name}`,
+      title: err.message,
+      status: err.status,
+      detail: err.message,
+      instance: c.req.url
     }, err.status);
   }
 
   return c.json({
-    error: 'Internal Server Error'
+    type: 'https://ref.gs1.org/standards/epcis/exceptions#ImplementationException',
+    title: 'Internal Server Error',
+    status: 500,
+    detail: err.message,
+    instance: c.req.url
   }, 500);
 });
 
