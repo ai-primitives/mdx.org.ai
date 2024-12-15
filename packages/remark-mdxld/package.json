@@ -22,6 +22,15 @@
   ],
   "author": "AI Primitives",
   "license": "MIT",
+  "release": {
+    "branches": ["main"],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/npm",
+      "@semantic-release/github"
+    ]
+  },
   "dependencies": {
     "mdast": "^3.0.0",
     "remark-frontmatter": "^5.0.0",
@@ -30,14 +39,25 @@
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
     "unified": "^11.0.5",
+    "unist-util-visit": "^5.0.0",
     "yaml": "^2.6.1"
   },
   "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^11.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^9.2.6",
+    "@semantic-release/npm": "^11.0.2",
+    "@semantic-release/release-notes-generator": "^12.1.0",
     "@types/mdast": "^4.0.4",
     "@types/node": "^20.10.0",
     "@types/unist": "^3.0.3",
     "@types/vfile": "^4.0.0",
+    "mdast-util-gfm": "^3.0.0",
+    "mdast-util-to-markdown": "^2.1.2",
+    "semantic-release": "^22.0.12",
     "typescript": "^5.3.0",
+    "unist-util-visit-parents": "^6.0.1",
     "vfile": "^6.0.3",
     "vitest": "^1.0.0"
   },

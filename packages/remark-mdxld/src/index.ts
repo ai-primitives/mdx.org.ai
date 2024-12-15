@@ -1,57 +1,159 @@
-import { Plugin } from 'unified'
-import { unified } from 'unified'
-import { Root, Node } from 'mdast'
+import { Plugin, unified } from 'unified'
+import { Root, Node, Paragraph, ListItem, PhrasingContent } from 'mdast'
 import { VFile } from 'vfile'
 import remarkMdx from 'remark-mdx'
 import remarkGfm from 'remark-gfm'
 import remarkFrontmatter from 'remark-frontmatter'
 import remarkParse from 'remark-parse'
-import remarkStringify from 'remark-stringify'
+import remarkStringify, { Options as StringifyOptions } from 'remark-stringify'
 import { parseYamlLd, type YamlLdData } from './yaml-ld'
+import { visit, type Visitor } from 'unist-util-visit'
 
 interface RemarkMdxldOptions {
-  preferDollarPrefix?: boolean
   gfm?: boolean
+  preferDollarPrefix?: boolean
 }
 
-// Create a preset function that returns a configured processor
-export function createProcessor(options: RemarkMdxldOptions = {}) {
-  const { gfm = true } = options
-  return unified()
-    .use(remarkParse)
-    .use(remarkMdx)
-    .use(remarkFrontmatter, ['yaml'])
-    .use(gfm ? remarkGfm : () => (tree: Root) => tree)
-    .use(remarkStringify)
+interface TextNode extends Node {
+  type: 'text'
+  value: string
+}
+
+const remarkStripGfm: Plugin<[], Root> = () => {
+  return (tree: Root, file: VFile) => {
+    const listItemVisitor: Visitor<ListItem> = (node) => {
+      if ('checked' in node) {
+        const textNode = node.children[0]
+        if (textNode && textNode.type === 'paragraph') {
+          const firstChild = textNode.children[0]
+          if (firstChild && 'value' in firstChild) {
+            firstChild.value = firstChild.value.replace(/^\[[ x]\]\s*/, '')
+          }
+        }
+        delete node.checked
+      }
+    }
+
+    visit(tree, 'listItem', listItemVisitor)
+    return tree
+  }
+}
+
+const remarkDisableGfm: Plugin<[], Root> = () => {
+  return (tree: Root, file: VFile) => {
+    const visitor: Visitor<TextNode> = (node, index, parent) => {
+      if (!parent || typeof index !== 'number') return
+
+      if (node.type === 'text' && node.value.includes('|')) {
+        const lines = node.value.split('\n')
+        const textContent = lines
+          .map((line: string) =>
+            line.split('|')
+              .map((cell: string) => cell.trim())
+              .filter(Boolean)
+              .join(' ')
+          )
+          .join('\n')
+          .trim()
+
+        const paragraph: Paragraph = {
+          type: 'paragraph',
+          children: [{
+            type: 'text',
+            value: textContent
+          }] as PhrasingContent[]
+        }
+
+        parent.children[index] = paragraph
+        return [true, index]
+      }
+    }
+
+    visit(tree, 'text', visitor)
+    return tree
+  }
 }
 
 const remarkMdxld: Plugin<[RemarkMdxldOptions?], Root> = (options = {}) => {
   const { preferDollarPrefix = true } = options
 
-  return function transformer(tree: Root, file: VFile) {
-    // Find and process YAML frontmatter
-    const yamlNode = tree.children.find((node): node is Node & { type: 'yaml', value: string } =>
-      node.type === 'yaml'
-    )
+  return async (tree: Root, file: VFile) => {
+    if (!file.data) {
+      file.data = {}
+    }
 
-    if (!yamlNode) {
+    const yamlNode = tree.children.find(node => node.type === 'yaml')
+    if (!yamlNode || !('value' in yamlNode)) {
       const error = new Error('Missing required frontmatter')
       file.message(error.message)
       throw error
     }
 
     try {
-      const processedData = parseYamlLd(yamlNode.value, preferDollarPrefix)
-      file.data.yamlLd = processedData
+      const yamlLd = parseYamlLd(yamlNode.value as string, preferDollarPrefix)
+      file.data.yamlLd = yamlLd
     } catch (error) {
       if (error instanceof Error) {
         file.message(error.message)
+        throw error
       }
       throw error
     }
 
     return tree
   }
+}
+
+export function createProcessor(options: RemarkMdxldOptions = {}) {
+  const { gfm = true } = options
+
+  const processor = unified()
+
+  if (!gfm) {
+    processor.use(remarkParse, {
+      commonmark: true,
+      gfm: false
+    })
+  } else {
+    processor.use(remarkParse)
+  }
+
+  processor.use(remarkFrontmatter, ['yaml'])
+  processor.use(remarkMdxld, options)
+
+  if (!gfm) {
+    processor
+      .use(remarkDisableGfm)
+      .use(remarkStripGfm)
+  }
+
+  processor.use(remarkMdx)
+
+  if (gfm) {
+    processor.use(remarkGfm)
+  }
+
+  const stringifyOptions: Partial<StringifyOptions> = {
+    bullet: '-',
+    listItemIndent: 'one',
+    rule: '-',
+    strong: '*',
+    emphasis: '_',
+    fences: true,
+    setext: false,
+    fence: '`',
+    quote: "'",
+    tightDefinitions: true,
+    resourceLink: false,
+    ruleSpaces: false,
+    handlers: gfm ? undefined : {
+      table: () => '',
+      tableRow: () => '',
+      tableCell: () => ''
+    }
+  }
+
+  return processor.use(remarkStringify, stringifyOptions)
 }
 
 export default remarkMdxld
