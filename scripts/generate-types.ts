@@ -8,88 +8,54 @@ process.on('unhandledRejection', (error: unknown) => {
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { globSync } from 'glob';
-import { parseMDXFile, type MDXParseResult } from '../packages/mdx-types/src/utils/mdx-parser.js';
+import { parseMDXFile, type MDXParseResult, type MDXMetadata } from '../packages/mdx-types/src/utils/mdx-parser.js';
 import { promises as fs, existsSync, mkdirSync } from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-interface MDXMetadata {
-  $type: string;
+function generateTypeDefinitions(metadataList: MDXMetadata[]): string {
+  const uniqueTypes = new Set(metadataList.map(m => m.$type).filter(Boolean));
+
+  const interfaces = Array.from(uniqueTypes).map(type => {
+    const typeMetadata = metadataList.find(m => m.$type === type);
+    if (!typeMetadata) return '';
+
+    const propertyDefinitions = Object.entries(typeMetadata)
+      .filter(([key]) => !key.startsWith('_'))
+      .map(([key, value]) => {
+        const isOptional = metadataList.some(m => m.$type === type && !(key in m));
+        const typeStr = typeof value === 'string' ? 'string'
+          : typeof value === 'number' ? 'number'
+          : typeof value === 'boolean' ? 'boolean'
+          : Array.isArray(value) ? 'any[]'
+          : 'any';
+
+        return `  ${key}${isOptional ? '?' : ''}: ${typeStr};`;
+      })
+      .join('\n');
+
+    return `
+export interface ${type}MDX {
+${propertyDefinitions}
+}`;
+  });
+
+  return `// Auto-generated type definitions
+// DO NOT EDIT DIRECTLY
+
+${interfaces.join('\n')}
+
+export type MDXType = ${Array.from(uniqueTypes).map(type => `'${type}'`).join(' | ')};
+
+export interface MDXFrontmatter {
+  $type: MDXType;
   title: string;
   description: string;
   $context?: string;
   $id?: string;
   [key: string]: any;
 }
-
-function generateTypeDefinitions(metadataList: MDXMetadata[]): string {
-  const typeDefinitions = new Map<string, Map<string, Set<any>>>();
-
-  metadataList.forEach(metadata => {
-    const type = metadata.$type?.replace('https://mdx.org.ai/', '') || 'Unknown';
-    if (!typeDefinitions.has(type)) {
-      typeDefinitions.set(type, new Map());
-    }
-
-    const properties = typeDefinitions.get(type)!;
-    Object.entries(metadata).forEach(([key, value]) => {
-      if (!properties.has(key)) {
-        properties.set(key, new Set());
-      }
-      properties.get(key)?.add(value);
-    });
-  });
-
-  const interfaces = Array.from(typeDefinitions.entries())
-    .filter(([type]) => type !== 'Unknown')
-    .map(([type, properties]) => {
-      const propertyDefinitions = Array.from(properties.entries())
-        .map(([key, values]) => {
-          const valueArray = Array.from(values);
-          let typeStr: string;
-
-          if (key === '$type') {
-            return `  $type: 'https://mdx.org.ai/${type}';`;
-          }
-
-          if (valueArray.length === 1) {
-            const value = valueArray[0];
-            if (typeof value === 'string' && value.startsWith('https://')) {
-              typeStr = `'${value}'`;
-            } else if (Array.isArray(value)) {
-              typeStr = `${typeof value[0]}[]`;
-            } else {
-              typeStr = typeof value;
-            }
-          } else {
-            typeStr = valueArray
-              .map(v => typeof v === 'string' && v.startsWith('https://') ? `'${v}'` : typeof v)
-              .join(' | ');
-          }
-
-          const isRequired = key === 'title' || key === 'description';
-          return `  ${key}${isRequired ? '' : '?'}: ${typeStr};`;
-        })
-        .join('\n');
-
-      return `
-export interface ${type}Frontmatter {
-  $type: 'https://mdx.org.ai/${type}';
-  title: string;
-  description: string;
-  $context?: 'https://schema.org' | 'https://mdx.org.ai';
-  $id?: string;
-${propertyDefinitions}
-}`;
-    });
-
-  return `// Generated types for MDX frontmatter
-${interfaces.join('\n\n')}
-
-export type MDXType = ${interfaces.length > 0
-    ? interfaces.map(i => i.match(/interface (\w+)/)![1]).join(' | ')
-    : 'never'};
 `;
 }
 

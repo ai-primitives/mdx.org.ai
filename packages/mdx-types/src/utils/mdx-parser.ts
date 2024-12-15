@@ -23,36 +23,29 @@ export interface MDXParseResult {
 }
 
 function normalizeFrontmatter(frontmatter: Record<string, any>): MDXMetadata {
-  const type = frontmatter['$type'] || frontmatter['@type'] || '';
-  const id = frontmatter['$id'] || frontmatter['@id'] || undefined;
-  const context = frontmatter['$context'] || frontmatter['@context'] || 'https://mdx.org.ai';
-  const title = frontmatter['title'];
-  const description = frontmatter['description'];
-
-  if (!type) throw new Error('$type is required in frontmatter');
-  if (!title) throw new Error('title is required in frontmatter');
-  if (!description) throw new Error('description is required in frontmatter');
-
   const {
     $type, '@type': atType,
     $id, '@id': atId,
     $context: dollarContext,
     '@context': atContext,
+    title,
+    description,
     ...rest
   } = frontmatter;
 
   return {
-    $type: type.replace('https://mdx.org.ai/', ''),
-    title,
-    description,
-    ...(id && { $id: id }),
-    ...(context && { $context: context }),
+    $type: $type || atType || '',
+    title: title || '',
+    description: description || '',
+    $id: $id || atId,
+    $context: dollarContext || atContext,
     ...rest
   };
 }
 
 export async function parseMDXFile(filePath: string): Promise<MDXParseResult> {
   try {
+    console.log(`Reading file: ${filePath}`);
     const content = await fs.readFile(filePath, 'utf-8');
 
     const processor = unified()
@@ -60,38 +53,46 @@ export async function parseMDXFile(filePath: string): Promise<MDXParseResult> {
       .use(remarkFrontmatter, ['yaml'])
       .use(remarkMdx);
 
+    console.log(`Parsing MDX content for ${filePath}`);
     const tree = await processor.parse(content);
 
-    let frontmatter: Record<string, any> = {};
-    visit(tree, 'yaml', (node: any) => {
-      try {
-        frontmatter = parseYaml(node.value) || {};
-      } catch (e) {
-        throw new Error(`Failed to parse frontmatter in ${filePath}: ${(e as Error).message}`);
-      }
+    let frontmatterNode: any = null;
+    let examples: string[] = [];
+
+    visit(tree, 'yaml', (node) => {
+      frontmatterNode = node;
     });
 
-    if (Object.keys(frontmatter).length === 0) {
+    if (!frontmatterNode) {
       throw new Error(`No frontmatter found in ${filePath}`);
     }
 
-    const examples: string[] = [];
-    visit(tree, 'code', (node: any) => {
-      if (node.meta === 'example') {
-        examples.push(node.value);
-      }
-    });
+    console.log(`Parsing frontmatter for ${filePath}`);
+    const frontmatter = parseYaml(frontmatterNode.value);
+    const metadata = normalizeFrontmatter(frontmatter);
 
-    const contentWithoutFrontmatter = content
-      .replace(/^---\n[\s\S]*?\n---\n/, '')
-      .trim();
+    if (!metadata.$type) {
+      throw new Error(`No $type found in frontmatter of ${filePath}`);
+    }
 
+    if (!metadata.title) {
+      throw new Error(`No title found in frontmatter of ${filePath}`);
+    }
+
+    if (!metadata.description) {
+      throw new Error(`No description found in frontmatter of ${filePath}`);
+    }
+
+    const contentWithoutFrontmatter = content.replace(/---\n[\s\S]*?\n---/, '').trim();
+
+    console.log(`Successfully parsed ${filePath}`);
     return {
-      metadata: normalizeFrontmatter(frontmatter),
+      metadata,
       content: contentWithoutFrontmatter,
       examples
     };
-  } catch (e) {
-    throw new Error(`Failed to parse MDX file ${filePath}: ${(e as Error).message}`);
+  } catch (error: any) {
+    console.error(`Error parsing MDX file ${filePath}:`, error);
+    throw error;
   }
 }
