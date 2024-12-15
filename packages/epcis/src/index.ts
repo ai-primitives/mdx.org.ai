@@ -4,6 +4,7 @@ import { HTTPException } from 'hono/http-exception';
 import type { Context, MiddlewareHandler } from 'hono';
 import { ClickhouseClient } from './clickhouse';
 import { eventValidationMiddleware } from './middleware/validation';
+import { rateLimitMiddleware } from './middleware/rate-limit';
 import type { EPCISEvent, HonoEnv } from './types';
 
 const app = new Hono<HonoEnv>();
@@ -30,6 +31,7 @@ const clickhouseMiddleware: MiddlewareHandler<HonoEnv> = async (c, next) => {
 // Add middleware
 app.use('*', clickhouseMiddleware);
 app.use('*', cors());
+app.use('/capture', rateLimitMiddleware);
 app.use('/capture', eventValidationMiddleware);
 
 // Discovery endpoints
