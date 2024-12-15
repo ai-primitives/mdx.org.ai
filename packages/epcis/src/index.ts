@@ -31,11 +31,20 @@ const clickhouseMiddleware: MiddlewareHandler<HonoEnv> = async (c, next) => {
   await next();
 };
 
-// Add middleware
-app.use('*', clickhouseMiddleware);
+// Add CORS middleware
 app.use('*', cors());
+
+// Test endpoint for rate limiting
+app.get('/test-rate-limit', rateLimitMiddleware, async (c) => {
+  return c.json({ message: 'Rate limit test endpoint', timestamp: Date.now() });
+});
+
+// Add middleware for EPCIS routes
 app.use('/capture', rateLimitMiddleware);
+app.use('/capture', clickhouseMiddleware);
 app.use('/capture', eventValidationMiddleware);
+app.use('/queries', clickhouseMiddleware);
+app.use('/subscriptions', clickhouseMiddleware);
 
 // Mount routes
 app.route('/capture', captureRoutes);
@@ -58,7 +67,8 @@ app.get('/', async (c: Context) => {
       '/events',
       '/capture',
       '/queries',
-      '/subscriptions'
+      '/subscriptions',
+      '/test-rate-limit'
     ]
   });
 });
