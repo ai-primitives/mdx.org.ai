@@ -36,7 +36,7 @@ export default async function RootLayout({ children }) {
         </div>
       }
       // Next.js discord server
-      chatLink="https://discord.gg/hEM84NMkRv"
+      chatLink="https://discord.gg/BHZCzx83"
     />
   )
   return (
